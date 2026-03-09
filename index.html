@@ -903,6 +903,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 
     <!-- ── SETTINGS ── -->
     <div class="page" id="page-settings">
+      <div id="settings-non-admin-msg" style="display:none;background:rgba(61,142,255,.08);border:1px solid rgba(61,142,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:10px;">
+        <span class="material-icons-round" style="color:var(--blue);font-size:20px;">info</span>
+        <span>يمكنك تعديل إعدادات الشاشة فقط — إدارة الحسابات للمدير فقط</span>
+      </div>
       <div style="max-width:560px;display:flex;flex-direction:column;gap:14px;">
         <div class="card">
           <div class="card-hdr"><span class="card-title">إعدادات الشركة</span></div>
@@ -927,11 +931,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             <button class="btn btn-p" onclick="saveSettings()">حفظ الإعدادات</button>
           </div>
         </div>
-        <div class="card">
-          <div class="card-hdr"><span class="card-title">إدارة الموظفين</span></div>
+        <div class="card" id="emp-management-card">
+          <div class="card-hdr"><span class="card-title">إدارة الحسابات</span></div>
           <div class="card-body">
             <div id="emp-settings-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
-            <div style="display:flex;gap:8px;">
+            <div id="add-emp-row" style="display:flex;gap:8px;">
               <input id="new-emp" placeholder="اسم الموظف الجديد...">
               <button class="btn btn-p" onclick="addEmployee()">
                 <span class="material-icons-round" style="font-size:14px;">add</span> إضافة
@@ -939,7 +943,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
             </div>
           </div>
         </div>
-        <div class="card">
+        <div class="card" id="data-card">
           <div class="card-hdr"><span class="card-title">البيانات</span></div>
           <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-g" onclick="exportBackup()"><span class="material-icons-round" style="font-size:14px;">download</span> نسخة احتياطية</button>
@@ -1117,10 +1121,16 @@ function can(perm){
 function applyPermUI(){
   if(!currentUser)return;
   const u=employees.find(e=>e.id===currentUser);if(!u)return;
-  // sidebar nav items
-  ['dashboard','leads','clients','deals','pipeline','tasks','employees','reports','excel','settings'].forEach(p=>{
+  // sidebar nav items — employees وsettings للمدير فقط
+  ['dashboard','leads','clients','deals','pipeline','tasks','reports','excel'].forEach(p=>{
     const el=document.getElementById('nav-'+p);
     if(el)el.style.display=u.perms[p]?'':'none';
+  });
+  // employees & settings: مدير فقط
+  const isAdminUser = u.role === 'admin';
+  ['employees','settings'].forEach(p=>{
+    const el=document.getElementById('nav-'+p);
+    if(el)el.style.display=isAdminUser?'':'none';
   });
   // add button
   const addBtn=document.getElementById('add-btn');
@@ -1840,34 +1850,42 @@ if(xlDrop){
 // ══════════════════════════════════════════
 // SETTINGS
 // ══════════════════════════════════════════
+function isAdmin(){ return employees.find(e=>e.id===currentUser)?.role==='admin'; }
+
 function renderSettings(){
+  const admin = isAdmin();
   document.getElementById('s-company').value=settings.company||'';
   document.getElementById('s-currency').value=settings.currency||'ريال';
   document.getElementById('s-manager').value=settings.manager||'';
-  
-  // تحديث قائمة الموظفين مع زر الصلاحيات
-  const isAdmin=()=>{const u=employees.find(e=>e.id===currentUser);return u&&u.role==='admin';};
-  document.getElementById('emp-settings-list').innerHTML=employees.map((e,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--s2);border:1px solid var(--border);border-radius:10px;">
-      <div style="width:34px;height:34px;border-radius:9px;background:${EC[i%EC.length]};display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${initials(e.name)}</div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;">${e.name}</div>
-        <div style="font-size:11px;color:${ROLE_COLOR[e.role]||'var(--text3)'};">${ROLES[e.role]||e.role}</div>
-      </div>
-      <div style="display:flex;gap:5px;">
-        ${isAdmin()?`
-          <button class="btn btn-g btn-xs" onclick="openPermModal('${e.id}')" title="إدارة الصلاحيات">
-            <span class="material-icons-round" style="font-size:13px;">admin_panel_settings</span> صلاحيات
-          </button>
-          <button class="btn btn-g btn-xs" onclick="editEmpModal('${e.id}')" title="تعديل">
-            <span class="material-icons-round" style="font-size:13px;">edit</span>
-          </button>
-          <button class="btn-icon" style="color:var(--red);" onclick="removeEmp('${e.id}')">
-            <span class="material-icons-round" style="font-size:14px;">delete</span>
-          </button>
-        `:'<span style="font-size:11px;color:var(--text3);">للمشاهدة فقط</span>'}
-      </div>
-    </div>`).join('');
+  // قسم إدارة الحسابات — للمدير فقط
+  const empCard=document.getElementById('emp-management-card');
+  if(empCard) empCard.style.display=admin?'block':'none';
+  const dataCard=document.getElementById('data-card');
+  if(dataCard) dataCard.style.display=admin?'block':'none';
+  if(!admin){
+    const msg=document.getElementById('settings-non-admin-msg');
+    if(msg) msg.style.display='flex';
+    return;
+  }
+  const msg=document.getElementById('settings-non-admin-msg');
+  if(msg) msg.style.display='none';
+  const addEmpRow=document.getElementById('add-emp-row');
+  if(addEmpRow) addEmpRow.style.display='flex';
+  document.getElementById('emp-settings-list').innerHTML=employees.map((e,i)=>{
+    const isSelf=e.id===currentUser;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:'+EC[i%EC.length]+';display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">'+initials(e.name)+'</div>'
+      +'<div style="flex:1;">'
+        +'<div style="font-size:13px;font-weight:700;">'+e.name+(isSelf?' <span style="font-size:10px;background:rgba(255,107,53,.12);color:var(--accent);padding:2px 7px;border-radius:99px;">أنت</span>':'')+'</div>'
+        +'<div style="font-size:11px;color:'+(ROLE_COLOR[e.role]||'var(--text3)')+';">'+( ROLES[e.role]||e.role)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:5px;align-items:center;">'
+        +'<button class="btn btn-g btn-xs" onclick="openPermModal(\''+e.id+'\')" title="الصلاحيات"><span class="material-icons-round" style="font-size:13px;">admin_panel_settings</span> صلاحيات</button>'
+        +'<button class="btn btn-g btn-xs" onclick="editEmpModal(\''+e.id+'\')" title="تعديل"><span class="material-icons-round" style="font-size:13px;">edit</span></button>'
+        +(!isSelf?'<button class="btn-icon" style="color:var(--red);" onclick="removeEmp(\''+e.id+'\')" title="حذف"><span class="material-icons-round" style="font-size:14px;">delete</span></button>':'')
+      +'</div>'
+    +'</div>';
+  }).join('');
 }
 function saveSettings(){
   settings.company=gv('s-company')||'نظام إدارة العملاء';
@@ -1880,6 +1898,7 @@ function saveSettings(){
   toast('تم الحفظ ✓');
 }
 function addEmployee(){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
   const n=gv('new-emp').trim();if(!n)return;
   const newEmp={
     id:uid(),name:n,role:'sales',pin:'0000',
@@ -1893,11 +1912,15 @@ function addEmployee(){
   toast('تم إضافة '+n+' ✓ — تذكر تعيين PIN والصلاحيات');
 }
 function removeEmp(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
   const e=employees.find(x=>x.id===id);if(!e)return;
-  if(!confirm('حذف '+e.name+'؟'))return;
+  if(e.id===currentUser){toast('لا يمكنك حذف حسابك الخاص','error');return;}
+  if(!confirm('حذف حساب '+e.name+'؟'))return;
   employees=employees.filter(x=>x.id!==id);DB.set('employees',employees);renderSettings();
+  toast('تم حذف '+e.name);
 }
 function editEmpModal(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
   const e=employees.find(x=>x.id===id);if(!e)return;
   openModal('تعديل: '+e.name,`
     <div class="frow">
@@ -1923,6 +1946,8 @@ function pickColor(c,el){
   applyTheme();
 }
 function openPermModal(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
+  if(employees.find(e=>e.id===currentUser)?.role !== 'admin'){toast('ليس لديك صلاحية','error');return;}
   const e=employees.find(x=>x.id===id);if(!e)return;
   const ei=employees.indexOf(e);
 
