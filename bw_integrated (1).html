@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>نظام إدارة العملاء</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ════════════════════════════════
+   GLOBAL RESET & VARIABLES
+════════════════════════════════ */
+:root{
+  /* Content background */
+  --bg:#0D1117;
+  --s1:#161B22;--s2:#1C2230;--s3:#222C3C;
+  --border:#2D3B4E;--border2:#3A4D62;
+  /* Accent colors */
+  --accent:#FF6B35;
+  --blue:#4A90D9;--green:#2ECC71;--yellow:#F5A623;
+  --red:#E74C3C;--purple:#9B59B6;--teal:#1ABC9C;--pink:#E91E8C;
+  /* Text */
+  --text:#C9D1D9;--text2:#8B949E;--text3:#58667A;
+  /* ── ZOHO SIDEBAR exact colors ── */
+  --zsb:#1B2340;        /* sidebar bg - exact Zoho dark navy */
+  --zsb2:#232C50;       /* hover bg */
+  --zsb3:#2B3660;       /* active bg */
+  --ztext:#8A90B0;      /* default text */
+  --ztext2:#D0D4EE;     /* hover/active text */
+  --ztext3:#4E567A;     /* muted */
+  --zborder:rgba(255,255,255,.06);
+  --zacc:#4A8FD4;       /* blue accent (active indicator) */
+  --sw:210px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow:hidden;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+input,select,textarea,button{font-family:'Tajawal',sans-serif;}
+textarea{resize:vertical;min-height:68px;}
+
+/* ════════════════════════════════
+   LAYOUT SHELL
+════════════════════════════════ */
+.app{display:flex;height:100vh;}
+
+/* ════════════════════════════════
+   ZOHO-EXACT SIDEBAR
+════════════════════════════════ */
+.sidebar{
+  width:var(--sw);
+  background:var(--zsb);
+  display:flex;flex-direction:column;
+  flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+  border-left:1px solid var(--zborder);
+}
+
+/* ── Logo row ── */
+.zlogo{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 12px 11px;
+  border-bottom:1px solid var(--zborder);
+  cursor:default;
+}
+.zlogo-icon{
+  width:26px;height:26px;border-radius:6px;flex-shrink:0;
+  background:linear-gradient(135deg,#FF6B35,#E63000);
+  display:grid;place-items:center;
+  font-size:11px;font-weight:900;color:#fff;
+}
+.zlogo-name{font-size:13px;font-weight:700;color:var(--ztext2);letter-spacing:-.2px;}
+.zlogo-toggle{margin-right:auto;color:var(--ztext3);font-size:18px;cursor:pointer;line-height:1;}
+.zlogo-toggle:hover{color:var(--ztext);}
+
+/* ── Top flat items (Home/Reports/Analytics/MyRequests) ── */
+.ztop{padding:6px 6px 4px;}
+.zitem{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:5px;
+  cursor:pointer;color:var(--ztext);
+  font-size:12.5px;font-weight:400;
+  transition:background .12s,color .12s;
+  position:relative;margin:0 4px 1px;
+}
+.zitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zitem.active::after{
+  content:'';position:absolute;right:-4px;top:5px;bottom:5px;
+  width:3px;background:var(--zacc);border-radius:0 0 0 3px;
+}
+.zicon{font-size:16px;flex-shrink:0;color:inherit;}
+
+/* ── Divider ── */
+.zdiv{height:1px;background:var(--zborder);margin:3px 0;}
+
+/* ── Teamspace header ── */
+.zteam{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 12px 6px;
+}
+.zteam-badge{
+  width:18px;height:18px;border-radius:4px;flex-shrink:0;
+  background:linear-gradient(135deg,#4A90D9,#6B4FD8);
+  display:grid;place-items:center;
+  font-size:8px;font-weight:800;color:#fff;letter-spacing:-.5px;
+}
+.zteam-name{font-size:12px;font-weight:600;color:var(--ztext);flex:1;}
+.zteam-arrow{font-size:16px;color:var(--ztext3);cursor:pointer;}
+
+/* ── Search inside sidebar ── */
+.zsearch{
+  margin:0 8px 6px;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:5px;padding:6px 9px;
+}
+.zsearch input{
+  background:none;border:none;outline:none;
+  font-size:12px;color:var(--ztext2);width:100%;
+  font-family:'Tajawal',sans-serif;
+}
+.zsearch input::placeholder{color:var(--ztext3);}
+.zsearch-icon{font-size:14px;color:var(--ztext3);}
+
+/* ── Workqueue ── */
+.zwq{
+  display:flex;align-items:center;gap:8px;
+  margin:0 6px 3px;padding:7px 10px;
+  border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12px;font-weight:500;
+  transition:background .12s;
+}
+.zwq:hover{background:var(--zsb2);color:var(--ztext2);}
+.zwq-icon{font-size:15px;color:var(--ztext);}
+.zwq-star{margin-right:auto;font-size:12px;}
+
+/* ── Section group ── */
+.zsec{padding:0 4px 2px;}
+.zsec-hdr{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px 4px;cursor:pointer;
+}
+.zsec-hdr:hover .zsec-name{color:var(--ztext2);}
+.zsec-icon{font-size:15px;flex-shrink:0;}
+.zsec-name{font-size:11.5px;font-weight:700;color:var(--ztext);flex:1;transition:color .12s;text-transform:uppercase;letter-spacing:.3px;}
+.zsec-arr{font-size:14px;color:var(--ztext3);transition:transform .2s;flex-shrink:0;}
+.zsec-body{overflow:hidden;transition:max-height .22s ease;}
+
+/* ── Sub items (inside sections) ── */
+.zsubitem{
+  display:flex;align-items:center;gap:0;
+  padding:7px 8px 7px 4px;margin:0 4px 1px;
+  border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12px;
+  transition:background .1s,color .1s;
+  position:relative;
+}
+.zsubitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zsubitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zsubitem.active::after{
+  content:'';position:absolute;right:-4px;top:5px;bottom:5px;
+  width:3px;background:var(--zacc);border-radius:0 0 0 3px;
+}
+.zsub-ind{width:32px;display:flex;justify-content:center;flex-shrink:0;}
+.zsub-icon{font-size:14px;color:inherit;opacity:.8;}
+.zsub-lbl{flex:1;}
+.zbadge{
+  background:rgba(255,255,255,.1);color:var(--ztext2);
+  font-size:9px;font-weight:700;padding:0 5px;
+  border-radius:99px;min-width:16px;text-align:center;line-height:16px;
+}
+.zbadge.accent{background:rgba(255,107,53,.75);color:#fff;}
+.zbadge.blue{background:rgba(74,143,212,.7);color:#fff;}
+.zbadge.green{background:rgba(46,204,113,.7);color:#fff;}
+
+/* ── Bottom standalone items ── */
+.zbot{padding:2px 6px;}
+.zbotitem{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12.5px;
+  transition:background .12s,color .12s;margin:0 4px 1px;
+}
+.zbotitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zbotitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zbot-icon{font-size:16px;flex-shrink:0;color:inherit;}
+
+/* ── Footer user ── */
+.sb-footer{margin-top:auto;padding:8px 6px;border-top:1px solid var(--zborder);}
+.user-card{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;}
+.user-card:hover{background:var(--zsb2);}
+.u-av{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+
+/* ════════════════════════════════
+   MAIN AREA
+════════════════════════════════ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Topbar ── */
+.topbar{
+  height:48px;background:var(--s1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;
+}
+.topbar-title{font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;}
+.topbar-r{margin-right:auto;display:flex;gap:7px;align-items:center;}
+.sbox{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;}
+.sbox input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:145px;}
+.sbox .mi{font-size:14px;color:var(--text3);}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;padding:16px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ════════════════════════════════
+   BUTTONS
+════════════════════════════════ */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .13s;white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,#FF6B35,#E63000);color:#fff;box-shadow:0 3px 10px rgba(255,107,53,.3);}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(255,107,53,.4);}
+.btn-g{background:var(--s2);color:var(--text);border:1px solid var(--border);}
+.btn-g:hover{background:var(--s3);}
+.btn-d{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2);}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--text2);padding:5px;border-radius:6px;display:grid;place-items:center;transition:all .12s;}
+.btn-icon:hover{background:var(--s2);color:var(--text);}
+
+/* ════════════════════════════════
+   CARDS
+════════════════════════════════ */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.card-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-title{font-size:13px;font-weight:700;}
+.card-body{padding:14px;}
+
+/* ── Stat cards ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;top:0;right:0;bottom:0;width:2px;background:var(--c,var(--accent));}
+.stat-lbl{font-size:10px;color:var(--text2);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+.stat-val{font-size:22px;font-weight:900;font-family:'Cairo',sans-serif;}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* ════════════════════════════════
+   TABLE
+════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 11px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2;}
+td{padding:9px 11px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+tr:last-child td{border:none;}
+tbody tr:hover{background:rgba(255,255,255,.018);}
+
+/* ════════════════════════════════
+   BADGES — Lead Status
+════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
+/* lead statuses */
+.bs-new{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-not_contacted{background:rgba(155,89,182,.15);color:#C39BD3;}
+.bs-contacted{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-no_answer{background:rgba(245,166,35,.18);color:#F5A623;}
+.bs-not_interested{background:rgba(231,76,60,.15);color:#E74C3C;}
+.bs-interested{background:rgba(255,107,53,.15);color:#FF8C5A;}
+.bs-converted{background:rgba(46,204,113,.2);color:#2ECC71;font-weight:800;}
+.bs-duplicate{background:rgba(155,89,182,.2);color:#BB8FCE;}
+/* stages */
+.bs-assign{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-workin{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-pending{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-followup{background:rgba(155,89,182,.15);color:#C39BD3;}
+/* deals */
+.bs-new_deal{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-hot{background:rgba(255,107,53,.15);color:#FF8C5A;}
+.bs-pending_deal{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-won{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-lost{background:rgba(231,76,60,.15);color:#E74C3C;}
+/* priority */
+.bs-high{background:rgba(231,76,60,.15);color:#E74C3C;}
+.bs-medium{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-low{background:rgba(46,204,113,.15);color:#58D68D;}
+
+/* ════════════════════════════════
+   MODAL
+════════════════════════════════ */
+.mo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px);}
+.mo-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:14px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.7);}
+.mo-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.mo-title{font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;}
+.mo-body{padding:16px;display:flex;flex-direction:column;gap:11px;}
+.mo-foot{padding:11px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+
+/* FORM */
+.field{display:flex;flex-direction:column;gap:4px;flex:1;}
+.frow{display:flex;gap:10px;}
+.flabel{font-size:11px;font-weight:700;color:var(--text2);}
+input,select,textarea{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+
+/* ════════════════════════════════
+   FILTER SIDEBAR
+════════════════════════════════ */
+.fsidebar{width:190px;flex-shrink:0;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:11px;overflow-y:auto;max-height:calc(100vh-135px);}
+.fg-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:10px 0 5px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.fg-title:first-child{margin-top:0;}
+.fc-item{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:var(--text2);cursor:pointer;}
+.fc-item:hover{color:var(--text);}
+.fc-item input[type=checkbox],.fc-item input[type=radio]{width:13px;height:13px;flex-shrink:0;margin:0;accent-color:var(--accent);}
+.sinput{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:6px 9px;margin-bottom:9px;}
+.sinput input{background:none;border:none;padding:0;font-size:12px;}
+.sinput .mi{font-size:13px;color:var(--text3);}
+
+/* ════════════════════════════════
+   KANBAN
+════════════════════════════════ */
+.kanban{display:flex;gap:11px;overflow-x:auto;padding-bottom:8px;align-items:flex-start;}
+.k-col{background:var(--s2);border:1px solid var(--border);border-radius:10px;min-width:205px;flex-shrink:0;}
+.k-hdr{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.k-title{font-size:12px;font-weight:700;}
+.k-cnt{font-size:10px;background:var(--s3);padding:1px 6px;border-radius:99px;}
+.k-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:50px;}
+.k-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .15s;}
+.k-card:hover{border-color:var(--accent);}
+
+/* ════════════════════════════════
+   TABS
+════════════════════════════════ */
+.tabs{display:flex;gap:2px;background:var(--s2);padding:3px;border-radius:8px;width:fit-content;}
+.tab-btn{padding:5px 12px;border-radius:6px;border:none;background:none;color:var(--text2);font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;}
+.tab-btn.active{background:var(--s1);color:var(--text);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+/* ════════════════════════════════
+   PROGRESS BAR
+════════════════════════════════ */
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.prog-lbl{font-size:11px;min-width:90px;text-align:right;color:var(--text2);}
+.prog-bg{flex:1;background:var(--s3);border-radius:99px;height:5px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.prog-num{font-size:11px;color:var(--text3);min-width:26px;}
+
+/* BAR CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:80px;}
+.bc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.bc-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;}
+.bc-lbl{font-size:9px;color:var(--text3);}
+.bc-val{font-size:9px;color:var(--text2);}
+
+/* ════════════════════════════════
+   EMPLOYEE CARDS
+════════════════════════════════ */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px;}
+.emp-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.emp-av{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-size:16px;font-weight:700;color:#fff;margin-bottom:9px;}
+.emp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.emp-row:last-child{border:none;}
+
+/* ════════════════════════════════
+   MISC
+════════════════════════════════ */
+.dash-2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+.drop-zone{border:2px dashed var(--border2);border-radius:10px;padding:28px;cursor:pointer;transition:all .2s;text-align:center;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(255,107,53,.04);}
+.fsel{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--text);font-size:12px;outline:none;cursor:pointer;}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.irow:last-child{border:none;}
+.ikey{color:var(--text2);}
+.empty{padding:36px;text-align:center;color:var(--text3);}
+.empty .mi{font-size:36px;display:block;margin-bottom:8px;opacity:.3;}
+
+/* ════════════════════════════════
+   OFFER OVERLAY
+════════════════════════════════ */
+.offer-ov{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);flex-direction:column;}
+.offer-ov.open{display:flex;}
+.offer-topbar{height:48px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;}
+.offer-content{flex:1;overflow-y:auto;}
+
+/* ════════════════════════════════
+   NOTIFICATIONS
+════════════════════════════════ */
+.notif-panel{display:none;position:fixed;left:18px;top:58px;width:298px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;z-index:600;box-shadow:0 16px 50px rgba(0,0,0,.6);}
+.notif-panel.open{display:block;}
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+.toast-wrap{position:fixed;bottom:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.toast{background:var(--s1);border:1px solid var(--border2);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 10px 36px rgba(0,0,0,.5);animation:tIn .22s ease,tOut .28s 2.7s forwards;}
+@keyframes tIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0}}
+
+@media(max-width:1200px){.stats-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}.dash-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ════════════════════════════════
+     ZOHO-STYLE SIDEBAR
+════════════════════════════════ -->
+<div class="sidebar">
+
+  <!-- Logo -->
+  <div class="zlogo">
+    <div class="zlogo-icon" style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#FF6B35,#D63000);display:grid;place-items:center;font-size:9px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 6px rgba(255,107,53,.4);">CRM</div>
+    <span class="zlogo-name" id="sb-company" style="font-size:13px;font-weight:700;color:var(--ztext2);">نظام إدارة العملاء</span>
+    <span class="material-icons-round zlogo-toggle" style="font-size:17px;">table_rows</span>
+  </div>
+
+  <!-- Top flat nav: Home, Reports, Analytics, My Requests -->
+  <div class="ztop">
+    <div class="zitem active" id="nav-dashboard" onclick="navigate('dashboard')">
+      <span class="material-icons-round zicon" style="color:#9BA8C8;">home</span>
+      <span>الرئيسية</span>
+    </div>
+    <div class="zitem" id="nav-reports" onclick="navigate('reports')">
+      <span class="material-icons-round zicon" style="color:#E85C5C;">insert_chart</span>
+      <span>التقارير</span>
+    </div>
+    <div class="zitem" id="nav-excel" onclick="navigate('excel')">
+      <span class="material-icons-round zicon" style="color:#3ABFA3;">ssid_chart</span>
+      <span>التحليلات</span>
+    </div>
+    <div class="zitem" onclick="navigate('employees')">
+      <span class="material-icons-round zicon" style="color:#8B9DE8;">manage_accounts</span>
+      <span>طلباتي</span>
+    </div>
+  </div>
+
+  <div class="zdiv"></div>
+
+  <!-- CRM Teamspace -->
+  <div class="zteam">
+    <div class="zteam-badge" style="width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#4A90D9,#6B4FD8);display:grid;place-items:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;">CRM</div>
+    <span class="zteam-name" id="sb-teamname" style="font-size:12px;font-weight:600;color:var(--ztext2);">نظام إدارة العملاء</span>
+    <span class="material-icons-round zteam-arrow" style="font-size:16px;color:var(--ztext3);">expand_more</span>
+  </div>
+
+  <!-- Search -->
+  <div class="zsearch">
+    <span class="material-icons-round zsearch-icon">search</span>
+    <input type="text" placeholder="بحث..." oninput="globalSearch(this.value)">
+  </div>
+
+  <!-- Workqueue -->
+  <div class="zwq">
+    <span class="material-icons-round zwq-icon">inbox</span>
+    <span>قائمة الانتظار</span>
+    <span class="zwq-star">✨</span>
+  </div>
+
+  <!-- ── Sales Section ── -->
+  <div class="zsec">
+    <div class="zsec-hdr" onclick="toggleSec(this)">
+      <span class="material-icons-round zsec-icon" style="color:#6B9DE8;">business_center</span>
+      <span class="zsec-name">المبيعات</span>
+      <span class="material-icons-round zsec-arr">expand_more</span>
+    </div>
+    <div class="zsec-body" style="max-height:300px;">
+      <div class="zsubitem active" id="nav-leads" onclick="navigate('leads')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">person_search</span></span>
+        <span class="zsub-lbl">اللـيدات</span>
+        <span class="zbadge accent" id="badge-leads">0</span>
+      </div>
+      <div class="zsubitem" id="nav-clients" onclick="navigate('clients')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">contacts</span></span>
+        <span class="zsub-lbl">جهات الاتصال</span>
+        <span class="zbadge blue" id="badge-clients">0</span>
+      </div>
+      <div class="zsubitem" id="nav-employees" onclick="navigate('employees')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">corporate_fare</span></span>
+        <span class="zsub-lbl">الحسابات</span>
+      </div>
+      <div class="zsubitem" id="nav-deals" onclick="navigate('deals')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">handshake</span></span>
+        <span class="zsub-lbl">الصفقات</span>
+        <span class="zbadge" id="badge-deals">0</span>
+      </div>
+      <div class="zsubitem" onclick="openOfferPage()">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">description</span></span>
+        <span class="zsub-lbl">المستندات</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Activities Section ── -->
+  <div class="zsec">
+    <div class="zsec-hdr" onclick="toggleSec(this)">
+      <span class="material-icons-round zsec-icon" style="color:#E09040;">event_note</span>
+      <span class="zsec-name">النشاطات</span>
+      <span class="material-icons-round zsec-arr">expand_more</span>
+    </div>
+    <div class="zsec-body" style="max-height:220px;">
+      <div class="zsubitem" id="nav-tasks" onclick="navigate('tasks')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#58C97A;">check_box</span></span>
+        <span class="zsub-lbl">المهام</span>
+        <span class="zbadge green" id="badge-tasks">0</span>
+      </div>
+      <div class="zsubitem" onclick="navigate('pipeline')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#6B9DE8;">groups</span></span>
+        <span class="zsub-lbl">الاجتماعات</span>
+      </div>
+      <div class="zsubitem">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#3ABFA3;">phone_in_talk</span></span>
+        <span class="zsub-lbl">المكالمات</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="zdiv"></div>
+
+  <!-- Bottom items -->
+  <div class="zbot">
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#6B9DE8;">hub</span>
+      <span>التكاملات</span>
+    </div>
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#E09040;">trending_up</span>
+      <span>التوقعات</span>
+    </div>
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#8B96A8;">mark_email_read</span>
+      <span>صندوق المبيعات</span>
+    </div>
+    <div class="zbotitem" id="nav-settings" onclick="navigate('settings')">
+      <span class="material-icons-round zbot-icon" style="color:#8B96A8;">work_history</span>
+      <span>وظائفي</span>
+    </div>
+  </div>
+
+  <!-- User footer -->
+  <div class="sb-footer">
+    <div class="user-card" onclick="toggleUserMenu()" style="position:relative;">
+      <div class="u-av" id="u-av">م</div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:600;color:var(--ztext2);" id="u-name">المدير</div>
+        <div style="font-size:10px;color:var(--accent);" id="u-role-lbl">مدير</div>
+      </div>
+      <span class="material-icons-round" style="font-size:16px;color:var(--ztext3);">more_vert</span>
+    </div>
+    <div id="user-menu" style="display:none;background:var(--zsb2);border:1px solid var(--zborder);border-radius:8px;margin:4px 4px 0;overflow:hidden;">
+      <div onclick="navigate('settings')" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;color:var(--ztext2);" onmouseover="this.style.background='var(--zsb3)'" onmouseout="this.style.background=''">
+        <span class="material-icons-round" style="font-size:15px;color:var(--blue);">manage_accounts</span> إدارة الحساب
+      </div>
+      <div onclick="logout()" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;color:var(--red);border-top:1px solid var(--zborder);" onmouseover="this.style.background='var(--zsb3)'" onmouseout="this.style.background=''">
+        <span class="material-icons-round" style="font-size:15px;">logout</span> تسجيل الخروج
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sidebar -->
+
+<!-- ════════════════════════════════
+     MAIN
+════════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">لوحة التحكم</span>
+    <div class="topbar-r">
+      <div class="sbox">
+        <span class="material-icons-round mi">search</span>
+        <input type="text" placeholder="بحث سريع..." id="gsearch" oninput="globalSearch(this.value)">
+      </div>
+      <button class="btn-icon" id="notif-btn" onclick="toggleNotif()" style="position:relative;">
+        <span class="material-icons-round">notifications</span>
+        <span id="notif-dot" style="display:none;position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid var(--s1);"></span>
+      </button>
+      <button class="btn btn-p btn-sm" id="add-btn" onclick="openAddModal()">
+        <span class="material-icons-round" style="font-size:14px;">add</span>
+        <span id="add-lbl">إضافة</span>
+      </button>
+      <button class="btn btn-g btn-sm" onclick="exportPage()">
+        <span class="material-icons-round" style="font-size:14px;">download</span>
+      </button>
+      <button class="btn btn-g btn-sm" id="logout-topbar" onclick="logout()" title="تسجيل الخروج" style="color:var(--red);">
+        <span class="material-icons-round" style="font-size:14px;">logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div class="content" id="content">
+<!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-row" id="dash-stats"></div>
+      <div class="dash-2">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">ليدات اليوم</span>
+            <span class="badge bs-new" id="dash-today-cnt">0</span>
+          </div>
+          <div class="tbl-wrap" style="max-height:270px;overflow-y:auto;">
+            <table><thead><tr><th>الاسم</th><th>المصدر</th><th>الموظف</th><th>الحالة</th></tr></thead>
+            <tbody id="dash-today-tbl"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">المهام المعلقة</span></div>
+          <div class="tbl-wrap" style="max-height:270px;overflow-y:auto;">
+            <table><thead><tr><th>المهمة</th><th>الأولوية</th><th>الاستحقاق</th></tr></thead>
+            <tbody id="dash-tasks-tbl"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="dash-2">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">توزيع الليدات حسب المصدر</span></div>
+          <div class="card-body" id="dash-source-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">آخر النشاطات</span></div>
+          <div class="card-body" style="max-height:220px;overflow-y:auto;" id="dash-activity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEADS ── -->
+    <div class="page" id="page-leads">
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div class="fsidebar" id="leads-filter">
+          <div class="sinput">
+            <span class="material-icons-round mi">search</span>
+            <input type="text" id="lead-search" placeholder="بحث..." oninput="renderLeads()">
+          </div>
+          <div class="fg-title">حالة الليد</div>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="new" onchange="renderLeads()"><span class="badge bs-new" style="font-size:10px;">جديد</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="not_contacted" onchange="renderLeads()"><span class="badge bs-not_contacted" style="font-size:10px;">لم يتم التواصل</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="contacted" onchange="renderLeads()"><span class="badge bs-contacted" style="font-size:10px;">تم التواصل</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="no_answer" onchange="renderLeads()"><span class="badge bs-no_answer" style="font-size:10px;font-weight:800;">🔇 No Answer</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="not_interested" onchange="renderLeads()"><span class="badge bs-not_interested" style="font-size:10px;">غير مهتم</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="interested" onchange="renderLeads()"><span class="badge bs-interested" style="font-size:10px;">مهتم</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="converted" onchange="renderLeads()"><span class="badge bs-converted" style="font-size:10px;">تم التحويل</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-st" value="duplicate" onchange="renderLeads()"><span class="badge bs-duplicate" style="font-size:10px;">مكرر</span></label>
+          <div class="fg-title">مصدر الليد</div>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="snap_messages" onchange="renderLeads()">👻 Snap Messages</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="snapchat_form" onchange="renderLeads()">👻 Snapchat Form</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="tiktok_ads" onchange="renderLeads()">🎵 TikTok Ads</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="instagram" onchange="renderLeads()">📸 Instagram</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="whatsapp" onchange="renderLeads()">💬 WhatsApp</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="website" onchange="renderLeads()">🌐 الموقع</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="referral" onchange="renderLeads()">🤝 إحالة</label>
+          <label class="fc-item"><input type="checkbox" class="lf-src" value="other" onchange="renderLeads()">📋 أخرى</label>
+          <div class="fg-title">المرحلة</div>
+          <label class="fc-item"><input type="checkbox" class="lf-stg" value="assign" onchange="renderLeads()"><span class="badge bs-assign" style="font-size:10px;">Assign</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-stg" value="workin" onchange="renderLeads()"><span class="badge bs-workin" style="font-size:10px;">Work in it</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-stg" value="pending" onchange="renderLeads()"><span class="badge bs-pending" style="font-size:10px;">Pending</span></label>
+          <label class="fc-item"><input type="checkbox" class="lf-stg" value="followup" onchange="renderLeads()"><span class="badge bs-followup" style="font-size:10px;">Followup</span></label>
+          <div class="fg-title">الموظف</div>
+          <div id="lf-emp-list"></div>
+          <div class="fg-title">الوقت</div>
+          <label class="fc-item"><input type="radio" name="lf-time" value="" onchange="renderLeads()" checked>الكل</label>
+          <label class="fc-item"><input type="radio" name="lf-time" value="today" onchange="renderLeads()">اليوم</label>
+          <label class="fc-item"><input type="radio" name="lf-time" value="week" onchange="renderLeads()">هذا الأسبوع</label>
+          <label class="fc-item"><input type="radio" name="lf-time" value="month" onchange="renderLeads()">هذا الشهر</label>
+          <div style="margin-top:12px;">
+            <button class="btn btn-g btn-sm" style="width:100%;" onclick="resetLeadFilters()">
+              <span class="material-icons-round" style="font-size:14px;">refresh</span> إعادة التعيين
+            </button>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <div class="tabs">
+              <button class="tab-btn active" onclick="switchLeadTab('all',this)">كل الليدات</button>
+              <button class="tab-btn" onclick="switchLeadTab('mine',this)">ليداتي</button>
+            </div>
+            <span id="leads-count" style="font-size:11px;color:var(--text3);"></span>
+            <div style="margin-right:auto;display:flex;gap:7px;">
+              <select class="fsel" id="lead-sort" onchange="renderLeads()">
+                <option value="date_desc">الأحدث أولاً</option>
+                <option value="date_asc">الأقدم أولاً</option>
+                <option value="name">الاسم</option>
+              </select>
+              ${can('exportLeads')?`<button class="btn btn-g btn-sm" onclick="exportLeads()"><span class="material-icons-round" style="font-size:14px;">download</span> Excel</button>`:''}
+            </div>
+          </div>
+          <div class="card">
+            <div class="tbl-wrap" style="max-height:calc(100vh - 195px);overflow-y:auto;">
+              <table>
+                <thead><tr>
+                  <th style="width:36px;"><input type="checkbox"></th>
+                  <th>الاسم</th><th>الجوال</th><th>وقت الإضافة</th>
+                  <th>حالة الليد</th><th>مصدر الليد</th><th>الوجهة</th>
+                  <th>الموظف</th><th>المرحلة</th><th>🔇 No Answer</th><th>ملاحظة</th><th>الإجراءات</th>
+                </tr></thead>
+                <tbody id="leads-tbody"></tbody>
+              </table>
+            </div>
+            <div style="padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);">
+              الإجمالي: <strong id="leads-total">0</strong> سجل
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CLIENTS ── -->
+    <div class="page" id="page-clients">
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <div class="sinput" style="flex:1;max-width:300px;">
+          <span class="material-icons-round mi">search</span>
+          <input type="text" id="cl-search" placeholder="بحث في العملاء..." oninput="renderClients()">
+        </div>
+        <select class="fsel" id="cl-type" onchange="renderClients()">
+          <option value="">كل العملاء</option><option value="vip">VIP</option><option value="normal">عادي</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div class="card" style="flex:1;">
+          <div class="tbl-wrap" style="max-height:calc(100vh - 190px);overflow-y:auto;">
+            <table>
+              <thead><tr><th>الاسم</th><th>الجوال</th><th>البريد</th><th>الوجهة</th><th>الصفقات</th><th>النوع</th><th>إجراءات</th></tr></thead>
+              <tbody id="clients-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="client-panel" style="display:none;width:290px;flex-shrink:0;">
+          <div class="card">
+            <div class="card-hdr">
+              <span class="card-title" id="cp-name">—</span>
+              <button class="btn-icon" onclick="document.getElementById('client-panel').style.display='none'"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="card-body" id="cp-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DEALS ── -->
+    <div class="page" id="page-deals">
+      <div style="display:flex;gap:9px;margin-bottom:12px;flex-wrap:wrap;">
+        <div class="sinput" style="flex:1;max-width:300px;">
+          <span class="material-icons-round mi">search</span>
+          <input type="text" id="deal-search" placeholder="بحث..." oninput="renderDeals()">
+        </div>
+        <select class="fsel" id="deal-status" onchange="renderDeals()">
+          <option value="">كل الحالات</option>
+          <option value="new_deal">جديدة</option><option value="hot">ساخنة</option>
+          <option value="pending_deal">معلقة</option><option value="won">مكتملة</option><option value="lost">خسرناها</option>
+        </select>
+        <select class="fsel" id="deal-emp" onchange="renderDeals()"><option value="">كل الموظفين</option></select>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap" style="max-height:calc(100vh - 185px);overflow-y:auto;">
+          <table>
+            <thead><tr><th>العميل</th><th>الوجهة</th><th>التاريخ</th><th>الأفراد</th><th>القيمة</th><th>الحالة</th><th>الموظف</th><th>إجراءات</th></tr></thead>
+            <tbody id="deals-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PIPELINE ── -->
+    <div class="page" id="page-pipeline">
+      <div class="kanban" id="kanban-board"></div>
+    </div>
+
+    <!-- ── TASKS ── -->
+    <div class="page" id="page-tasks">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="renderTasks('all',this)">الكل</button>
+          <button class="tab-btn" onclick="renderTasks('pending',this)">معلقة</button>
+          <button class="tab-btn" onclick="renderTasks('done',this)">مكتملة</button>
+          <button class="tab-btn" onclick="renderTasks('late',this)">متأخرة</button>
+        </div>
+        <select class="fsel" id="task-emp" onchange="renderTasks('all')"><option value="">كل الموظفين</option></select>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>المهمة</th><th>الموظف</th><th>الاستحقاق</th><th>الأولوية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+            <tbody id="tasks-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EMPLOYEES ── -->
+    <div class="page" id="page-employees">
+      <div class="emp-grid" id="emp-grid"></div>
+    </div>
+
+    <!-- ── REPORTS ── -->
+    <div class="page" id="page-reports">
+      <div class="stats-row" id="report-stats"></div>
+      <div class="dash-2">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">الليدات حسب المصدر</span></div>
+          <div class="card-body" id="rep-source"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">الليدات حسب الحالة</span></div>
+          <div class="card-body" id="rep-status"></div>
+        </div>
+      </div>
+      <div class="dash-2">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">أداء الموظفين</span></div>
+          <div class="card-body" id="rep-emp"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">الليدات اليومية (آخر 14 يوم)</span></div>
+          <div class="card-body"><div class="bar-chart" id="rep-daily"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EXCEL ANALYZER ── -->
+    <div class="page" id="page-excel">
+      <div id="xl-upload">
+        <div style="display:flex;justify-content:center;padding:40px 0;">
+          <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:40px;max-width:440px;width:100%;text-align:center;">
+            <div style="font-size:48px;margin-bottom:14px;">📊</div>
+            <div style="font-size:18px;font-weight:800;margin-bottom:8px;font-family:'Cairo',sans-serif;">تحليل شيت الـ CRM</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:22px;line-height:1.7;">ارفع ملف Excel الخاص بالنظام لتحليل أداء الموظفين ومراحل المعالجة</div>
+            <div class="drop-zone" id="xl-drop" onclick="document.getElementById('xl-file').click()">
+              <span class="material-icons-round" style="font-size:38px;color:var(--text3);display:block;margin-bottom:8px;">cloud_upload</span>
+              <p style="font-size:13px;color:var(--text2);">اسحب الملف هنا أو <strong style="color:var(--accent);">انقر للاختيار</strong></p>
+              <p style="font-size:11px;color:var(--text3);margin-top:6px;">.xlsx أو .xls</p>
+            </div>
+            <input type="file" id="xl-file" accept=".xlsx,.xls" style="display:none" onchange="xlLoad(this)">
+          </div>
+        </div>
+      </div>
+      <div id="xl-dash" style="display:none;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+          <span id="xl-fname" style="font-size:12px;color:var(--text2);background:var(--s2);padding:4px 12px;border-radius:99px;border:1px solid var(--border);"></span>
+          <button class="btn btn-g btn-sm" onclick="xlExport()"><span class="material-icons-round" style="font-size:14px;">download</span> تصدير Excel</button>
+          <button class="btn btn-g btn-sm" onclick="xlImport()"><span class="material-icons-round" style="font-size:14px;">sync</span> استيراد كليدات</button>
+          <button class="btn btn-g btn-sm" onclick="document.getElementById('xl-file').click()"><span class="material-icons-round" style="font-size:14px;">upload_file</span> ملف آخر</button>
+          <select class="fsel" id="xl-emp-f" onchange="xlFilter()"><option value="">كل الموظفين</option></select>
+          <select class="fsel" id="xl-date-f" onchange="xlFilter()"><option value="">كل التواريخ</option></select>
+          <span id="xl-cnt" style="font-size:11px;color:var(--text3);margin-right:auto;"></span>
+        </div>
+        <div class="stats-row" id="xl-stats"></div>
+        <div class="dash-2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="card-hdr">
+              <span class="card-title">أداء الموظفين</span>
+              <div class="tabs"><button class="tab-btn active" onclick="xlEmpView('cards',this)">بطاقات</button><button class="tab-btn" onclick="xlEmpView('table',this)">جدول</button></div>
+            </div>
+            <div class="card-body">
+              <div id="xl-emp-cards"><div class="emp-grid" id="xl-emp-grid"></div></div>
+              <div id="xl-emp-table" style="display:none;" class="tbl-wrap">
+                <table><thead><tr><th>الموظف</th><th>الإجمالي</th><th>Assign</th><th>Work in it</th><th>Pending</th><th>Followup</th><th>متوسط استجابة</th></tr></thead>
+                <tbody id="xl-emp-tbody"></tbody></table>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="card">
+              <div class="card-hdr"><span class="card-title">توزيع المراحل</span></div>
+              <div class="card-body" id="xl-stages"></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <span class="card-title">الطلبات اليومية</span>
+                <select class="fsel" id="xl-chart-emp" onchange="xlDayChart()"><option value="">الكل</option></select>
+              </div>
+              <div class="card-body"><div class="bar-chart" id="xl-day-chart"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="card-hdr">
+              <span class="card-title">⚠️ طلبات متأخرة</span>
+              <span id="xl-alerts-cnt" class="badge bs-not_interested">0</span>
+            </div>
+            <div class="card-body" style="max-height:200px;overflow-y:auto;" id="xl-alerts"></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><span class="card-title">متوسط وقت كل مرحلة (دقيقة)</span></div>
+            <div class="card-body" id="xl-times"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">جدول البيانات الكاملة</span>
+            <span id="xl-tbl-cnt" style="font-size:11px;color:var(--text3);"></span>
+          </div>
+          <div class="tbl-wrap" style="max-height:380px;overflow-y:auto;">
+            <table><thead><tr>
+              <th>#</th><th>اسم العميل</th><th>رقم العميل</th><th>تاريخ الطلب</th>
+              <th>الموظف</th><th>الحالة</th>
+              <th>Assign</th><th>Work in it</th><th>Pending</th><th>Followup</th><th>وقت الاستجابة</th>
+            </tr></thead><tbody id="xl-main-tbl"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div class="page" id="page-settings">
+      <div id="settings-non-admin-msg" style="display:none;background:rgba(61,142,255,.08);border:1px solid rgba(61,142,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:10px;">
+        <span class="material-icons-round" style="color:var(--blue);font-size:20px;">info</span>
+        <span>يمكنك تعديل إعدادات الشاشة فقط — إدارة الحسابات للمدير فقط</span>
+      </div>
+      <div style="max-width:560px;display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-hdr"><span class="card-title">إعدادات الشركة</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field"><label class="flabel">اسم الشركة</label><input id="s-company" value="نظام إدارة العملاء"></div>
+            <div class="frow">
+              <div class="field"><label class="flabel">العملة</label>
+                <select id="s-currency"><option value="ريال">ريال سعودي</option><option value="$">دولار</option><option value="€">يورو</option></select>
+              </div>
+              <div class="field"><label class="flabel">اسم المسؤول</label><input id="s-manager" value=""></div>
+            </div>
+            <div class="field"><label class="flabel">لون التمييز</label>
+              <div style="display:flex;gap:8px;margin-top:4px;" id="color-swatches">
+                <div onclick="pickColor('#FF6B35',this)" style="width:26px;height:26px;border-radius:7px;background:#FF6B35;cursor:pointer;outline:2px solid #fff;outline-offset:2px;"></div>
+                <div onclick="pickColor('#3D8EFF',this)" style="width:26px;height:26px;border-radius:7px;background:#3D8EFF;cursor:pointer;"></div>
+                <div onclick="pickColor('#22C55E',this)" style="width:26px;height:26px;border-radius:7px;background:#22C55E;cursor:pointer;"></div>
+                <div onclick="pickColor('#A855F7',this)" style="width:26px;height:26px;border-radius:7px;background:#A855F7;cursor:pointer;"></div>
+                <div onclick="pickColor('#F59E0B',this)" style="width:26px;height:26px;border-radius:7px;background:#F59E0B;cursor:pointer;"></div>
+                <div onclick="pickColor('#EC4899',this)" style="width:26px;height:26px;border-radius:7px;background:#EC4899;cursor:pointer;"></div>
+              </div>
+            </div>
+            <button class="btn btn-p" onclick="saveSettings()">حفظ الإعدادات</button>
+          </div>
+        </div>
+        <div class="card" id="emp-management-card">
+          <div class="card-hdr"><span class="card-title">إدارة الحسابات</span></div>
+          <div class="card-body">
+            <div id="emp-settings-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+            <div id="add-emp-row" style="display:flex;gap:8px;">
+              <input id="new-emp" placeholder="اسم الموظف الجديد...">
+              <button class="btn btn-p" onclick="addEmployee()">
+                <span class="material-icons-round" style="font-size:14px;">add</span> إضافة
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="data-card">
+          <div class="card-hdr"><span class="card-title">البيانات</span></div>
+          <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-g" onclick="exportBackup()"><span class="material-icons-round" style="font-size:14px;">download</span> نسخة احتياطية</button>
+            <button class="btn btn-g" onclick="document.getElementById('import-file').click()"><span class="material-icons-round" style="font-size:14px;">upload</span> استيراد</button>
+            <button class="btn btn-d" onclick="resetData()"><span class="material-icons-round" style="font-size:14px;">delete_forever</span> إعادة الضبط</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(this)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- OFFER OVERLAY -->
+<div class="offer-ov" id="offer-overlay">
+  <div class="offer-topbar">
+    <button class="btn-icon" onclick="closeOfferPage()">
+      <span class="material-icons-round">arrow_back</span>
+    </button>
+    <span style="font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;">مولد العروض السياحية</span>
+    <a href="tourism_offer_generator.html" target="_blank" class="btn btn-g btn-sm" style="margin-right:auto;">
+      <span class="material-icons-round" style="font-size:13px;">open_in_new</span> فتح مستقل
+    </a>
+  </div>
+  <div class="offer-content" id="offer-content"></div>
+</div>
+
+<!-- NOTIF PANEL -->
+<div class="notif-panel" id="notif-panel">
+  <div style="padding:11px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:13px;font-weight:700;">التنبيهات</span>
+    <button class="btn btn-g btn-sm" onclick="clearNotifs()">مسح الكل</button>
+  </div>
+  <div id="notif-list" style="max-height:300px;overflow-y:auto;"></div>
+</div>
+
+<!-- MODAL -->
+<div class="mo-overlay" id="mo-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="mo-hdr">
+      <span class="mo-title" id="mo-title">—</span>
+      <button class="btn-icon" onclick="closeModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="mo-body" id="mo-body"></div>
+    <div class="mo-foot" id="mo-foot">
+      <button class="btn btn-p" id="mo-save">حفظ</button>
+      <button class="btn btn-g" onclick="closeModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:9000;background:#0D1117;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:380px;max-width:95vw;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#D63000);display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,107,53,.4);">CRM</div>
+      <div style="font-size:20px;font-weight:900;font-family:'Cairo',sans-serif;" id="login-company">نظام إدارة العملاء</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px;">مرحباً بك</div>
+    </div>
+
+    <!-- اختيار الموظف -->
+    <div id="login-step1">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);">اختر المستخدم</div>
+      <div id="login-emp-list" style="display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;"></div>
+      <!-- زر إنشاء حساب — يظهر دائماً -->
+      <div id="setup-btn-wrap" style="margin-top:12px;">
+        <button class="btn btn-p" style="width:100%;padding:11px;font-size:13px;" onclick="setupFirst()">
+          <span class="material-icons-round" style="font-size:16px;">person_add</span> إنشاء حساب جديد
+        </button>
+      </div>
+    </div>
+
+    <!-- إدخال الـ PIN -->
+    <div id="login-step2" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <button onclick="backToStep1()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);">
+          <span class="material-icons-round" style="font-size:16px;vertical-align:middle;">arrow_back</span>
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div id="pin-emp-av" style="width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;"></div>
+          <div>
+            <div id="pin-emp-name" style="font-size:14px;font-weight:700;"></div>
+            <div id="pin-emp-role" style="font-size:11px;color:var(--text3);"></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2);">أدخل رمز PIN</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="password" id="pin-input" maxlength="6" placeholder="● ● ● ●"
+          style="font-size:20px;letter-spacing:8px;text-align:center;padding:12px;"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="pin-error" style="color:var(--red);font-size:12px;text-align:center;min-height:18px;margin-bottom:8px;"></div>
+      <!-- numpad -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;" id="numpad"></div>
+      <button class="btn btn-p" style="width:100%;padding:11px;" onclick="doLogin()">
+        <span class="material-icons-round" style="font-size:16px;">login</span> دخول
+      </button>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-top:16px;">© <span id="footer-company">نظام إدارة العملاء</span></div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+
+function toggleSec(hdr){
+  const body=hdr.nextElementSibling;
+  const arr=hdr.querySelector('.zsec-arr');
+  const isOpen=body.style.maxHeight!=='0px'&&body.style.maxHeight!=='';
+  body.style.maxHeight=isOpen?'0px':body.scrollHeight+50+'px';
+  if(arr) arr.style.transform=isOpen?'rotate(-90deg)':'rotate(0deg)';
+}
+
+// ══════════════════════════════════════════
+// STORAGE & HELPERS
+// ══════════════════════════════════════════
+const DB={
+  get:k=>{try{return JSON.parse(localStorage.getItem('bw_'+k));}catch{return null;}},
+  set:(k,v)=>localStorage.setItem('bw_'+k,JSON.stringify(v))
+};
+const uid=()=>Math.random().toString(36).slice(2,10);
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtNum=n=>(+n||0).toLocaleString('ar');
+const initials=s=>String(s||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2);
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const fmtDate=d=>d?new Date(d).toLocaleDateString('ar',{year:'2-digit',month:'short',day:'numeric'}):'—';
+const fmtTime=d=>d?new Date(d).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}):'—';
+const gv=id=>document.getElementById(id)?.value||'';
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let settings  = DB.get('settings')  || {company:'نظام إدارة العملاء',currency:'ريال',accent:'#FF6B35',manager:'المدير'};
+DB.set('settings', settings);
+// ── تصحيح: إذا employees في localStorage قديم (array of strings)، امسحه ──
+{
+  const raw = DB.get('employees');
+  if(raw && raw.length && typeof raw[0] === 'string'){
+    DB.set('employees', []);
+  }
+}
+let employees = DB.get('employees') || [];
+// currentUser: الموظف المسجل دخول حالياً
+let currentUser = DB.get('currentUser') || null;
+let leads     = DB.get('leads')     || [];
+let clients   = DB.get('clients')   || [];
+let deals     = DB.get('deals')     || [];
+let tasks     = DB.get('tasks')     || [];
+let activity  = DB.get('activity')  || [];
+let xlData=[], xlFiltered=[];
+let currentPage='dashboard', leadTab='all';
+
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+const LS={new:'جديد',not_contacted:'لم يتم التواصل',contacted:'تم التواصل',no_answer:'لا يرد',not_interested:'غير مهتم',interested:'مهتم',converted:'تم التحويل',duplicate:'مكرر'};
+const SRC={snap_messages:'Snap Messages',snapchat_form:'Snapchat Form',tiktok_ads:'TikTok Ads',instagram:'Instagram',whatsapp:'WhatsApp',website:'الموقع',referral:'إحالة',other:'أخرى'};
+const ICON={snap_messages:'👻',snapchat_form:'👻',tiktok_ads:'🎵',instagram:'📸',whatsapp:'💬',website:'🌐',referral:'🤝',other:'📋'};
+const STGL={assign:'Assign',workin:'Work in it',pending:'Pending',followup:'Followup'};
+const STGC={assign:'bs-assign',workin:'bs-workin',pending:'bs-pending',followup:'bs-followup'};
+const PL={high:'عالية',medium:'متوسطة',low:'منخفضة'};
+const DL={new_deal:'جديدة',hot:'ساخنة',pending_deal:'معلقة',won:'مكتملة',lost:'خسرناها'};
+const EC=['#FF6B35','#3D8EFF','#22C55E','#A855F7','#F59E0B','#06B6D4','#EF4444','#EC4899'];
+const ROLES={admin:'مدير',sales:'موظف مبيعات',viewer:'عارض فقط'};
+const empName=e=>typeof e==='string'?e:(e?.name||'—');
+const empNames=()=>employees.map(e=>e.name||e);
+const ROLE_COLOR={admin:'var(--accent)',sales:'var(--blue)',viewer:'var(--text3)'};
+const PERM_LABELS={
+  dashboard:'لوحة التحكم',leads:'الليدات',clients:'العملاء',deals:'الصفقات',
+  pipeline:'خط الأنابيب',tasks:'المهام',employees:'الموظفون',reports:'التقارير',
+  excel:'تحليل Excel',settings:'الإعدادات',
+  addLead:'إضافة ليدات',editLead:'تعديل ليدات',deleteLead:'حذف ليدات',exportLeads:'تصدير Excel',
+  addDeal:'إضافة صفقات',deleteDeal:'حذف صفقات',addClient:'إضافة عملاء',deleteClient:'حذف عملاء'
+};
+
+// helper: هل المستخدم الحالي لديه صلاحية معينة؟
+function can(perm){
+  if(!currentUser)return false;
+  const u=employees.find(e=>e.id===currentUser);
+  if(!u)return false;
+  return !!u.perms[perm];
+}
+// helper: إخفاء/إظهار عناصر حسب الصلاحية
+function applyPermUI(){
+  if(!currentUser)return;
+  const u=employees.find(e=>e.id===currentUser);if(!u)return;
+  // sidebar nav items — employees وsettings للمدير فقط
+  ['dashboard','leads','clients','deals','pipeline','tasks','reports','excel'].forEach(p=>{
+    const el=document.getElementById('nav-'+p);
+    if(el)el.style.display=u.perms[p]?'':'none';
+  });
+  // employees & settings: مدير فقط
+  const isAdminUser = u.role === 'admin';
+  ['employees','settings'].forEach(p=>{
+    const el=document.getElementById('nav-'+p);
+    if(el)el.style.display=isAdminUser?'':'none';
+  });
+  // add button
+  const addBtn=document.getElementById('add-btn');
+  const page=currentPage;
+  let showAdd=false;
+  if(page==='leads')showAdd=can('addLead');
+  else if(page==='clients')showAdd=can('addClient');
+  else if(page==='deals'||page==='pipeline')showAdd=can('addDeal');
+  else if(page==='tasks')showAdd=true;
+  if(addBtn)addBtn.style.display=showAdd?'':'none';
+}
+
+// ══════════════════════════════════════════
+// SEED DATA
+// ══════════════════════════════════════════
+// seedDemo called only when first user is set up
+
+function seedDemo(){
+  if(!employees.length)return; // لا نبذر بيانات إذا لا يوجد موظفون
+  const SRCS=['snap_messages','snapchat_form','tiktok_ads','instagram','whatsapp','referral'];
+  const STATS=['new','not_contacted','no_answer','not_interested','interested','contacted'];
+  const STGS=['assign','workin','pending','followup'];
+  const DESTS=['تركيا','جورجيا','أوروبا','إندونيسيا','ماليزيا','دبي','المالديف','أذربيجان'];
+  const NAMES=['عميل 1','عميل 2','عميل 3','عميل 4','عميل 5','عميل 6','عميل 7','عميل 8','عميل 9','عميل 10','عميل 11','عميل 12','عميل 13','عميل 14','عميل 15','عميل 16','عميل 17','عميل 18'];
+  leads=Array.from({length:24},(_,i)=>{
+    const created=Date.now()-Math.random()*30*864e5;
+    const stg=STGS[Math.floor(Math.random()*STGS.length)];
+    const empObj=employees[Math.floor(Math.random()*employees.length)];const emp=empObj.name||empObj;
+    const base=created+Math.random()*3600000;
+    return{id:uid(),name:NAMES[i%NAMES.length],phone:'05'+(10000000+Math.floor(Math.random()*89999999)),source:SRCS[i%SRCS.length],status:STATS[i%STATS.length],dest:DESTS[i%DESTS.length],employee:emp,note:'',created,stage:stg,assign_t:base,workin_t:stg!=='assign'?base+Math.random()*1800000:null,pending_t:(stg==='pending'||stg==='followup')?base+Math.random()*3600000:null,followup_t:stg==='followup'?base+Math.random()*7200000:null};
+  });
+  clients=NAMES.slice(0,9).map((n,i)=>({id:uid(),name:n,phone:'05'+(10000000+i*7654321),email:'',dest:DESTS[i%DESTS.length],type:i<2?'vip':'normal',notes:[],created:Date.now()-i*864e5*4}));
+  deals=clients.slice(0,7).map((c,i)=>({id:uid(),clientId:c.id,client:c.name,dest:c.dest,date:today(),pax:2+i,value:5000+i*8000,status:['new_deal','hot','pending_deal','won','lost','new_deal','hot'][i],employee:employees[i%employees.length],created:Date.now()-i*864e5}));
+  tasks=[];
+  saveAll(); logAct('تم تهيئة النظام بالبيانات التجريبية','var(--accent)');
+}
+
+function saveAll(){DB.set('leads',leads);DB.set('clients',clients);DB.set('deals',deals);DB.set('tasks',tasks);DB.set('activity',activity);}
+function logAct(t,c='var(--text2)'){activity.unshift({id:uid(),text:t,color:c,time:Date.now()});if(activity.length>100)activity=activity.slice(0,100);DB.set('activity',activity);}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+const PT={dashboard:'لوحة التحكم',leads:'اللـيدات',clients:'العملاء',deals:'الصفقات',pipeline:'خط الأنابيب',tasks:'المهام',employees:'الموظفون',reports:'التقارير',excel:'تحليل Excel',settings:'الإعدادات'};
+const AL={leads:'ليد جديد',clients:'عميل جديد',deals:'صفقة جديدة',pipeline:'صفقة جديدة',tasks:'مهمة جديدة'};
+
+function navigate(page){
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('page-'+page); if(pg)pg.classList.add('active');
+  // Clear active on all nav elements
+  document.querySelectorAll('.zitem,.zsubitem,.zbotitem').forEach(n=>n.classList.remove('active'));
+  const ni=document.getElementById('nav-'+page); if(ni)ni.classList.add('active');
+  document.getElementById('topbar-title').textContent=PT[page]||page;
+  document.getElementById('add-lbl').textContent=AL[page]||'إضافة';
+  renderPage(page); updateBadges();
+}
+
+function renderPage(p){
+  if(p==='dashboard') renderDashboard();
+  if(p==='leads')     renderLeads();
+  if(p==='clients')   renderClients();
+  if(p==='deals')     renderDeals();
+  if(p==='pipeline')  renderPipeline();
+  if(p==='tasks')     renderTasks('all');
+  if(p==='employees') renderEmployees();
+  if(p==='reports')   renderReports();
+  if(p==='settings')  renderSettings();
+}
+
+function updateBadges(){
+  document.getElementById('badge-leads').textContent=leads.filter(l=>l.status==='new'||l.status==='not_contacted'||l.no_answer).length;
+  document.getElementById('badge-clients').textContent=clients.length;
+  document.getElementById('badge-deals').textContent=deals.filter(d=>!['won','lost'].includes(d.status)).length;
+  document.getElementById('badge-tasks').textContent=tasks.filter(t=>t.status==='pending').length;
+  buildNotifs();
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  const td=today();
+  const lt=leads.filter(l=>new Date(l.created).toISOString().slice(0,10)===td);
+  const ad=deals.filter(d=>!['won','lost'].includes(d.status));
+  const pt=tasks.filter(t=>t.status==='pending');
+  const conv=leads.filter(l=>l.status==='converted').length;
+
+  document.getElementById('dash-stats').innerHTML=[
+    {lbl:'الليدات اليوم',val:lt.length,sub:'ليد جديد',c:'var(--blue)'},
+    {lbl:'No Answer',val:leads.filter(l=>l.no_answer||l.status==='no_answer').length,sub:'تحتاج متابعة',c:'#F5A623'},
+    {lbl:'إجمالي الليدات',val:leads.length,sub:'كل السجلات',c:'var(--accent)'},
+    {lbl:'الصفقات النشطة',val:ad.length,sub:'صفقة مفتوحة',c:'var(--green)'},
+    {lbl:'المهام المعلقة',val:pt.length,sub:'تحتاج متابعة',c:'var(--yellow)'},
+    {lbl:'تم التحويل',val:conv,sub:pct(conv,leads.length||1)+'% نسبة التحويل',c:'var(--purple)'},
+  ].map(s=>`<div class="stat-card" style="--c:${s.c}"><div class="stat-lbl">${s.lbl}</div><div class="stat-val">${s.val}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
+
+  document.getElementById('dash-today-cnt').textContent=lt.length;
+  document.getElementById('dash-today-tbl').innerHTML=lt.slice(0,8).map(l=>`<tr>
+    <td><strong style="font-size:12px;">${l.name}</strong></td>
+    <td>${ICON[l.source]||''} <span style="font-size:11px;">${SRC[l.source]||l.source}</span></td>
+    <td style="font-size:11px;">${l.employee}</td>
+    <td><span class="badge bs-${l.status}" style="font-size:10px;">${l.no_answer?'🔇 ':''+(LS[l.status]||l.status)}</span></td>
+  </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">لا توجد ليدات اليوم</td></tr>';
+
+  document.getElementById('dash-tasks-tbl').innerHTML=pt.slice(0,6).map(t=>`<tr>
+    <td style="font-size:12px;">${t.title}</td>
+    <td><span class="badge bs-${t.priority}" style="font-size:10px;">${PL[t.priority]}</span></td>
+    <td style="font-size:11px;${t.due<td?'color:var(--red);':''}">${fmtDate(t.due)}</td>
+  </tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--green);padding:16px;font-size:12px;">لا توجد مهام ✓</td></tr>';
+
+  const sc={};leads.forEach(l=>{const k=SRC[l.source]||l.source;sc[k]=(sc[k]||0)+1;});
+  const maxS=Math.max(...Object.values(sc),1);
+  document.getElementById('dash-source-chart').innerHTML=Object.entries(sc).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,n])=>`
+    <div class="prog-row"><span class="prog-lbl">${k}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(n,maxS)}%;background:var(--accent);"></div></div><span class="prog-num">${n}</span></div>`).join('');
+
+  document.getElementById('dash-activity').innerHTML=activity.slice(0,8).map(a=>`
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="width:7px;height:7px;border-radius:50%;background:${a.color};flex-shrink:0;margin-top:5px;"></div>
+      <div style="flex:1;"><div style="font-size:12px;">${a.text}</div><div style="font-size:10px;color:var(--text3);">${fmtDate(a.time)}</div></div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// LEADS
+// ══════════════════════════════════════════
+function buildEmpFilters(){
+  const w=document.getElementById('lf-emp-list');
+  if(!w||w.children.length)return;
+  employees.forEach(e=>{
+    const l=document.createElement('label');l.className='fc-item';
+    l.innerHTML=`<input type="checkbox" class="lf-emp" value="${e.name}" onchange="renderLeads()"> ${e.name}`;
+    w.appendChild(l);
+  });
+}
+
+function renderLeads(){
+  buildEmpFilters();
+  const search=gv('lead-search').toLowerCase();
+  const stF=[...document.querySelectorAll('.lf-st:checked')].map(i=>i.value);
+  const srF=[...document.querySelectorAll('.lf-src:checked')].map(i=>i.value);
+  const stgF=[...document.querySelectorAll('.lf-stg:checked')].map(i=>i.value);
+  const empF=[...document.querySelectorAll('.lf-emp:checked')].map(i=>i.value);
+  const tmF=document.querySelector('input[name="lf-time"]:checked')?.value||'';
+  const sort=gv('lead-sort')||'date_desc';
+
+  let list=[...leads];
+  if(leadTab==='mine') list=list.filter(l=>l.employee===settings.manager);
+  if(search) list=list.filter(l=>(l.name+l.phone+l.dest+l.note).toLowerCase().includes(search));
+  if(stF.length)  list=list.filter(l=>stF.includes(l.status));
+  if(srF.length)  list=list.filter(l=>srF.includes(l.source));
+  if(stgF.length) list=list.filter(l=>stgF.includes(l.stage));
+  if(empF.length) list=list.filter(l=>empF.includes(l.employee));
+  const now=Date.now();
+  if(tmF==='today') list=list.filter(l=>new Date(l.created).toISOString().slice(0,10)===today());
+  if(tmF==='week')  list=list.filter(l=>l.created>=now-7*864e5);
+  if(tmF==='month') list=list.filter(l=>l.created>=now-30*864e5);
+  if(sort==='date_desc') list.sort((a,b)=>b.created-a.created);
+  if(sort==='date_asc')  list.sort((a,b)=>a.created-b.created);
+  if(sort==='name')      list.sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+
+  document.getElementById('leads-count').textContent=`${list.length} من ${leads.length}`;
+  document.getElementById('leads-total').textContent=list.length;
+
+  const ecm={};employees.forEach((e,i)=>ecm[e.name]=EC[i%EC.length]);
+
+  document.getElementById('leads-tbody').innerHTML=list.map(l=>{
+    const dt=new Date(l.created);
+    const ts=dt.toLocaleDateString('ar',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+    const stgHtml=l.stage?`<span class="badge ${STGC[l.stage]}" style="font-size:10px;cursor:pointer;" onclick="cycleStage('${l.id}',event)">${STGL[l.stage]}</span>`:'<span style="color:var(--text3);font-size:11px;">—</span>';
+    return `<tr onclick="openLeadDetail('${l.id}')" style="cursor:pointer;">
+      <td onclick="event.stopPropagation()"><input type="checkbox"></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:26px;height:26px;border-radius:7px;background:${ecm[l.employee]||'var(--accent)'};display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">${initials(l.name)}</div>
+          <strong style="font-size:12px;">${l.name}</strong>
+        </div>
+      </td>
+      <td style="font-size:11px;color:var(--text2);">${l.phone}</td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap;">${ts}</td>
+      <td onclick="event.stopPropagation()">
+        <span class="badge bs-${l.status}" style="cursor:pointer;" onclick="cycleStatus('${l.id}',event)">${LS[l.status]||l.status}</span>
+      </td>
+      <td>${ICON[l.source]||'📋'} <span style="font-size:11px;">${SRC[l.source]||l.source}</span></td>
+      <td style="font-size:12px;">${l.dest||'—'}</td>
+      <td style="font-size:12px;">${l.employee}</td>
+      <td onclick="event.stopPropagation()">${stgHtml}</td>
+      <td onclick="event.stopPropagation()" style="text-align:center;">
+        <label style="cursor:pointer;" title="${l.no_answer?'No Answer ✓':'تعليم كـ No Answer'}">
+          <input type="checkbox" ${l.no_answer?'checked':''} 
+            onchange="toggleNoAnswer('${l.id}',this.checked)"
+            style="width:14px;height:14px;accent-color:#F5A623;cursor:pointer;">
+        </label>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <input value="${(l.note||'').replace(/"/g,'&quot;')}" placeholder="ملاحظة..."
+          onchange="saveNote('${l.id}',this.value)"
+          style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;width:110px;color:var(--text);">
+      </td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:2px;">
+          <button class="btn-icon" onclick="editLead('${l.id}')"><span class="material-icons-round" style="font-size:14px;">edit</span></button>
+          <button class="btn-icon" onclick="convertLead('${l.id}')" style="color:var(--green);" title="تحويل لعميل"><span class="material-icons-round" style="font-size:14px;">person_add</span></button>
+          ${can('deleteLead')?`<button class="btn-icon" onclick="deleteLead('${l.id}')" style="color:var(--red);"><span class="material-icons-round" style="font-size:14px;">delete</span></button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="11"><div class="empty"><span class="material-icons-round mi">person_search</span><p>لا توجد نتائج</p></div></td></tr>`;
+}
+
+function cycleStatus(id,e){
+  e.stopPropagation();
+  const order=Object.keys(LS);
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  l.status=order[(order.indexOf(l.status)+1)%order.length];
+  DB.set('leads',leads);renderLeads();updateBadges();
+  logAct('تغيير حالة: '+l.name+' → '+LS[l.status],'var(--purple)');
+}
+
+function cycleStage(id,e){
+  e.stopPropagation();
+  const order=['assign','workin','pending','followup'];
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  const idx=order.indexOf(l.stage);
+  l.stage=order[(idx+1)%order.length];
+  const now=Date.now();
+  if(l.stage==='assign')l.assign_t=now;
+  if(l.stage==='workin')l.workin_t=now;
+  if(l.stage==='pending')l.pending_t=now;
+  if(l.stage==='followup')l.followup_t=now;
+  DB.set('leads',leads);renderLeads();
+  logAct('تغيير مرحلة: '+l.name+' → '+STGL[l.stage],'var(--teal)');
+}
+
+function saveNote(id,val){const l=leads.find(x=>x.id===id);if(l){l.note=val;DB.set('leads',leads);}}
+function toggleNoAnswer(id,val){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  l.no_answer=val;
+  if(val&&l.status!=='no_answer'){l.status='no_answer';}
+  else if(!val&&l.status==='no_answer'){l.status='contacted';}
+  DB.set('leads',leads);renderLeads();updateBadges();
+  logAct((val?'تعليم':'إلغاء تعليم')+' No Answer: '+l.name,'#F5A623');
+}
+
+function openLeadDetail(id){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  openModal('تفاصيل: '+l.name,`
+    <div style="display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;">
+      <div style="width:50px;height:50px;border-radius:12px;background:var(--accent);display:grid;place-items:center;font-size:20px;font-weight:700;color:#fff;">${initials(l.name)}</div>
+      <div style="flex:1;"><div style="font-size:16px;font-weight:800;font-family:'Cairo',sans-serif;">${l.name}</div><div style="font-size:12px;color:var(--text2);">${l.phone}</div></div>
+      <span class="badge bs-${l.status}">${LS[l.status]}</span>
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px;margin-bottom:12px;">
+      ${[['المصدر',ICON[l.source]+' '+(SRC[l.source]||l.source)],['الوجهة',l.dest||'—'],['الموظف',l.employee],['المرحلة',l.stage?STGL[l.stage]:'—'],['تاريخ الإضافة',fmtDate(l.created)],['الملاحظة',l.note||'—']].map(([k,v])=>`<div class="irow"><span class="ikey">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-p btn-sm" onclick="convertLead('${l.id}');closeModal()"><span class="material-icons-round" style="font-size:13px;">person_add</span> تحويل لعميل</button>
+      <button class="btn btn-g btn-sm" onclick="editLead('${l.id}');closeModal()"><span class="material-icons-round" style="font-size:13px;">edit</span> تعديل</button>
+    </div>`,null);
+  document.getElementById('mo-foot').style.display='none';
+}
+
+function editLead(id){openModal(id?'تعديل ليد':'ليد جديد',leadForm(leads.find(x=>x.id===id)||{}),()=>saveLead(id));}
+function deleteLead(id){if(!confirm('حذف هذا الليد؟'))return;leads=leads.filter(l=>l.id!==id);DB.set('leads',leads);renderLeads();updateBadges();toast('تم الحذف','info');}
+function convertLead(id){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  if(clients.find(c=>c.phone===l.phone)){toast('موجود بالفعل كعميل','info');return;}
+  clients.push({id:uid(),name:l.name,phone:l.phone,email:'',dest:l.dest||'',type:'normal',notes:[],created:Date.now()});
+  l.status='converted';saveAll();renderLeads();updateBadges();
+  logAct('تحويل ليد: '+l.name+' → عميل','var(--green)');
+  toast('تم تحويل '+l.name+' لعميل ✓');
+}
+function resetLeadFilters(){
+  document.querySelectorAll('.lf-st,.lf-src,.lf-stg,.lf-emp').forEach(c=>c.checked=false);
+  document.querySelector('input[name="lf-time"]').checked=true;
+  document.getElementById('lead-search').value='';
+  renderLeads();
+}
+function switchLeadTab(tab,btn){
+  leadTab=tab;
+  document.querySelectorAll('#page-leads .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderLeads();
+}
+function exportLeads(){
+  const wb=XLSX.utils.book_new();
+  const d=leads.map(l=>({'الاسم':l.name,'الجوال':l.phone,'المصدر':SRC[l.source]||l.source,'الحالة':LS[l.status]||l.status,'الوجهة':l.dest,'الموظف':l.employee,'المرحلة':STGL[l.stage]||'','الملاحظة':l.note,'التاريخ':fmtDate(l.created)}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d),'الليدات');
+  XLSX.writeFile(wb,'leads_'+today()+'.xlsx');toast('تم تصدير الليدات ✓');
+}
+function leadForm(l={}){
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${l.employee===e.name?'selected':''}>${e.name}</option>`).join('');
+  return `<div class="frow"><div class="field"><label class="flabel">الاسم *</label><input id="f-name" value="${l.name||''}"></div><div class="field"><label class="flabel">الجوال</label><input id="f-phone" value="${l.phone||''}"></div></div>
+    <div class="frow"><div class="field"><label class="flabel">مصدر الليد</label><select id="f-src">${Object.entries(SRC).map(([k,v])=>`<option value="${k}" ${l.source===k?'selected':''}>${ICON[k]||''} ${v}</option>`).join('')}</select></div><div class="field"><label class="flabel">حالة الليد</label><select id="f-lst">${Object.entries(LS).map(([k,v])=>`<option value="${k}" ${l.status===k?'selected':''}>${v}</option>`).join('')}</select></div></div>
+    <div class="frow"><div class="field"><label class="flabel">الوجهة</label><input id="f-dest" value="${l.dest||''}"></div><div class="field"><label class="flabel">الموظف</label><select id="f-emp">${eOpts}</select></div></div>
+    <div class="frow"><div class="field"><label class="flabel">المرحلة</label><select id="f-stg"><option value="">—</option>${Object.entries(STGL).map(([k,v])=>`<option value="${k}" ${l.stage===k?'selected':''}>${v}</option>`).join('')}</select></div></div>
+    <div class="field"><label class="flabel">ملاحظة</label><textarea id="f-note">${l.note||''}</textarea></div>`;
+}
+function saveLead(id){
+  const name=gv('f-name').trim();if(!name){toast('الاسم مطلوب','error');return;}
+  const now=Date.now();
+  if(id){const l=leads.find(x=>x.id===id);Object.assign(l,{name,phone:gv('f-phone'),source:gv('f-src'),status:gv('f-lst'),dest:gv('f-dest'),employee:gv('f-emp'),stage:gv('f-stg'),note:gv('f-note')});logAct('تعديل ليد: '+name,'var(--yellow)');}
+  else{leads.push({id:uid(),name,phone:gv('f-phone'),source:gv('f-src'),status:gv('f-lst')||'new',dest:gv('f-dest'),employee:gv('f-emp'),stage:gv('f-stg')||'assign',note:gv('f-note'),created:now,assign_t:now,workin_t:null,pending_t:null,followup_t:null});logAct('ليد جديد: '+name,'var(--blue)');}
+  DB.set('leads',leads);renderLeads();updateBadges();closeModal();toast('تم الحفظ ✓');
+}
+
+// ══════════════════════════════════════════
+// CLIENTS
+// ══════════════════════════════════════════
+function renderClients(){
+  const s=gv('cl-search').toLowerCase(),tp=gv('cl-type');
+  const list=clients.filter(c=>{
+    if(s&&!(c.name+c.phone+c.email).toLowerCase().includes(s))return false;
+    if(tp&&c.type!==tp)return false;
+    return true;
+  });
+  document.getElementById('clients-tbody').innerHTML=list.map(c=>`<tr onclick="openClientPanel('${c.id}')" style="cursor:pointer;">
+    <td><div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:27px;height:27px;border-radius:7px;background:var(--${c.type==='vip'?'yellow':'accent'});display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;">${initials(c.name)}</div>
+      <strong>${c.name}</strong>${c.type==='vip'?'<span class="badge bs-hot" style="font-size:9px;margin-right:4px;">VIP</span>':''}
+    </div></td>
+    <td style="font-size:12px;">${c.phone}</td>
+    <td style="font-size:11px;color:var(--text2);">${c.email||'—'}</td>
+    <td>${c.dest||'—'}</td>
+    <td>${deals.filter(d=>d.clientId===c.id).length}</td>
+    <td><span class="badge ${c.type==='vip'?'bs-hot':'bs-assign'}">${c.type==='vip'?'VIP':'عادي'}</span></td>
+    <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;">
+      <button class="btn-icon" onclick="editClient('${c.id}')"><span class="material-icons-round" style="font-size:14px;">edit</span></button>
+      <button class="btn-icon" style="color:var(--red);" onclick="deleteClient('${c.id}')"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+    </div></td>
+  </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><span class="material-icons-round mi">group</span><p>لا يوجد عملاء</p></div></td></tr>`;
+}
+function openClientPanel(id){
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  document.getElementById('cp-name').textContent=c.name;
+  const cd=deals.filter(d=>d.clientId===c.id);
+  document.getElementById('cp-body').innerHTML=`
+    <div style="margin-bottom:12px;">${[['الجوال',c.phone],['البريد',c.email||'—'],['الوجهة',c.dest||'—'],['النوع',c.type==='vip'?'VIP':'عادي']].map(([k,v])=>`<div class="irow"><span class="ikey">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}</div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">الصفقات (${cd.length})</div>
+    ${cd.map(d=>`<div style="background:var(--s2);border-radius:8px;padding:8px;margin-bottom:6px;font-size:11px;"><div style="font-weight:700;">${d.dest} — ${fmtNum(d.value)} ${settings.currency}</div><div style="color:var(--text2);">${d.date} · <span class="badge bs-${d.status}" style="font-size:9px;">${DL[d.status]||d.status}</span></div></div>`).join('')||'<p style="font-size:11px;color:var(--text3);">لا توجد صفقات</p>'}`;
+  document.getElementById('client-panel').style.display='block';
+}
+function editClient(id){openModal(id?'تعديل عميل':'عميل جديد',clientForm(clients.find(x=>x.id===id)||{}),()=>saveClient(id));}
+function deleteClient(id){if(!confirm('حذف؟'))return;clients=clients.filter(c=>c.id!==id);DB.set('clients',clients);renderClients();updateBadges();}
+function clientForm(c={}){
+  return `<div class="frow"><div class="field"><label class="flabel">الاسم *</label><input id="f-name" value="${c.name||''}"></div><div class="field"><label class="flabel">الجوال</label><input id="f-phone" value="${c.phone||''}"></div></div>
+    <div class="frow"><div class="field"><label class="flabel">البريد</label><input id="f-email" value="${c.email||''}"></div><div class="field"><label class="flabel">الوجهة</label><input id="f-dest" value="${c.dest||''}"></div></div>
+    <div class="field"><label class="flabel">النوع</label><select id="f-type"><option value="normal" ${c.type==='normal'?'selected':''}>عادي</option><option value="vip" ${c.type==='vip'?'selected':''}>VIP</option></select></div>`;
+}
+function saveClient(id){
+  const name=gv('f-name').trim();if(!name){toast('الاسم مطلوب','error');return;}
+  if(id)Object.assign(clients.find(x=>x.id===id),{name,phone:gv('f-phone'),email:gv('f-email'),dest:gv('f-dest'),type:gv('f-type')});
+  else clients.push({id:uid(),name,phone:gv('f-phone'),email:gv('f-email'),dest:gv('f-dest'),type:gv('f-type')||'normal',notes:[],created:Date.now()});
+  DB.set('clients',clients);renderClients();updateBadges();closeModal();toast('تم الحفظ ✓');
+  logAct((id?'تعديل':'إضافة')+' عميل: '+name,'var(--blue)');
+}
+
+// ══════════════════════════════════════════
+// DEALS
+// ══════════════════════════════════════════
+function renderDeals(){
+  const s=gv('deal-search').toLowerCase(),sf=gv('deal-status'),ef=gv('deal-emp');
+  const sel=document.getElementById('deal-emp');
+  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e.name;o.textContent=e.name;sel.appendChild(o);});
+  let list=deals.filter(d=>{
+    if(s&&!(d.client+d.dest).toLowerCase().includes(s))return false;
+    if(sf&&d.status!==sf)return false;
+    if(ef&&d.employee!==ef)return false;
+    return true;
+  }).sort((a,b)=>b.created-a.created);
+  document.getElementById('deals-tbody').innerHTML=list.map(d=>`<tr>
+    <td><strong>${d.client}</strong></td>
+    <td>${d.dest}</td>
+    <td style="font-size:11px;">${d.date}</td>
+    <td>${d.pax||1} أفراد</td>
+    <td style="font-weight:700;color:var(--accent);">${fmtNum(d.value)} ${settings.currency}</td>
+    <td><span class="badge bs-${d.status}">${DL[d.status]||d.status}</span></td>
+    <td style="font-size:12px;">${d.employee}</td>
+    <td><div style="display:flex;gap:2px;">
+      <button class="btn-icon" onclick="editDeal('${d.id}')"><span class="material-icons-round" style="font-size:14px;">edit</span></button>
+      <button class="btn-icon" onclick="openOfferPage()" title="إنشاء عرض" style="color:var(--accent);"><span class="material-icons-round" style="font-size:14px;">description</span></button>
+      <button class="btn-icon" style="color:var(--red);" onclick="deleteDeal('${d.id}')"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+    </div></td>
+  </tr>`).join('')||`<tr><td colspan="8"><div class="empty"><span class="material-icons-round mi">handshake</span><p>لا توجد صفقات</p></div></td></tr>`;
+}
+function editDeal(id){openModal(id?'تعديل صفقة':'صفقة جديدة',dealForm(deals.find(x=>x.id===id)||{}),()=>saveDeal(id));}
+function deleteDeal(id){if(!confirm('حذف؟'))return;deals=deals.filter(d=>d.id!==id);DB.set('deals',deals);renderDeals();updateBadges();}
+function dealForm(d={}){
+  const cOpts=clients.map(c=>`<option value="${c.id}" ${d.clientId===c.id?'selected':''}>${c.name}</option>`).join('');
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${d.employee===e.name?'selected':''}>${e.name}</option>`).join('');
+  return `<div class="frow"><div class="field"><label class="flabel">العميل</label><select id="f-cl"><option value="">—</option>${cOpts}</select></div><div class="field"><label class="flabel">الوجهة</label><input id="f-dest" value="${d.dest||''}"></div></div>
+    <div class="frow"><div class="field"><label class="flabel">التاريخ</label><input type="date" id="f-date" value="${d.date||today()}"></div><div class="field"><label class="flabel">الأفراد</label><input type="number" id="f-pax" value="${d.pax||2}" min="1"></div></div>
+    <div class="frow"><div class="field"><label class="flabel">القيمة</label><input type="number" id="f-val" value="${d.value||0}"></div><div class="field"><label class="flabel">الحالة</label><select id="f-dst">${Object.entries(DL).map(([k,v])=>`<option value="${k}" ${d.status===k?'selected':''}>${v}</option>`).join('')}</select></div></div>
+    <div class="field"><label class="flabel">الموظف</label><select id="f-emp">${eOpts}</select></div>`;
+}
+function saveDeal(id){
+  const cid=gv('f-cl'),c=clients.find(x=>x.id===cid);
+  const obj={clientId:cid,client:c?.name||'—',dest:gv('f-dest'),date:gv('f-date'),pax:+gv('f-pax')||2,value:+gv('f-val')||0,status:gv('f-dst')||'new_deal',employee:gv('f-emp')};
+  if(id)Object.assign(deals.find(x=>x.id===id),obj);
+  else deals.push({id:uid(),...obj,created:Date.now()});
+  DB.set('deals',deals);renderDeals();updateBadges();closeModal();toast('تم الحفظ ✓');
+}
+
+// ══════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════
+function renderPipeline(){
+  const cols=[{key:'new_deal',lbl:'جديدة',c:'var(--blue)'},{key:'hot',lbl:'ساخنة',c:'var(--accent)'},{key:'pending_deal',lbl:'معلقة',c:'var(--yellow)'},{key:'won',lbl:'مكتملة',c:'var(--green)'},{key:'lost',lbl:'خسرناها',c:'var(--red)'}];
+  document.getElementById('kanban-board').innerHTML=cols.map(col=>{
+    const cd=deals.filter(d=>d.status===col.key);
+    const tv=cd.reduce((s,d)=>s+(d.value||0),0);
+    return `<div class="k-col"><div class="k-hdr"><div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${col.c};"></div><span class="k-title">${col.lbl}</span></div><div style="text-align:left;"><span class="k-cnt">${cd.length}</span><div style="font-size:9px;color:var(--text3);margin-top:1px;">${fmtNum(tv)}</div></div></div>
+      <div class="k-body">${cd.map(d=>`<div class="k-card" onclick="editDeal('${d.id}')">
+        <div style="font-size:12px;font-weight:700;margin-bottom:3px;">${d.client}</div>
+        <div style="font-size:11px;color:var(--text2);">${d.dest}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;">
+          <span style="color:var(--accent);font-weight:700;">${fmtNum(d.value)} ${settings.currency}</span>
+          <span style="color:var(--text3);">${d.employee}</span>
+        </div></div>`).join('')||'<p style="font-size:11px;color:var(--text3);text-align:center;padding:10px;">فارغ</p>'}
+      </div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// TASKS
+// ══════════════════════════════════════════
+function renderTasks(filter,btn){
+  if(btn){document.querySelectorAll('#page-tasks .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  const td=today(),ef=gv('task-emp');
+  const sel=document.getElementById('task-emp');
+  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e.name;o.textContent=e.name;sel.appendChild(o);});
+  let list=tasks.filter(t=>{
+    if(ef&&t.employee!==ef)return false;
+    if(filter==='pending')return t.status==='pending';
+    if(filter==='done')return t.status==='done';
+    if(filter==='late')return t.status==='pending'&&t.due<td;
+    return true;
+  });
+  document.getElementById('tasks-tbody').innerHTML=list.map(t=>`<tr>
+    <td><strong style="font-size:12px;">${t.title}</strong></td>
+    <td style="font-size:12px;">${t.employee||'—'}</td>
+    <td style="font-size:11px;${t.due<td&&t.status==='pending'?'color:var(--red);font-weight:700;':''}">${fmtDate(t.due)}</td>
+    <td><span class="badge bs-${t.priority}" style="font-size:10px;">${PL[t.priority]}</span></td>
+    <td><span class="badge ${t.status==='done'?'bs-won':'bs-pending_deal'}" style="font-size:10px;">${t.status==='done'?'مكتملة':'معلقة'}</span></td>
+    <td><div style="display:flex;gap:2px;">
+      ${t.status==='pending'?`<button class="btn-icon" onclick="completeTask('${t.id}')" style="color:var(--green);" title="إتمام"><span class="material-icons-round" style="font-size:14px;">check_circle</span></button>`:''}
+      <button class="btn-icon" onclick="editTask('${t.id}')"><span class="material-icons-round" style="font-size:14px;">edit</span></button>
+      <button class="btn-icon" style="color:var(--red);" onclick="deleteTask('${t.id}')"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+    </div></td>
+  </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><span class="material-icons-round mi">task_alt</span><p>لا توجد مهام</p></div></td></tr>`;
+}
+function completeTask(id){const t=tasks.find(x=>x.id===id);if(t){t.status='done';DB.set('tasks',tasks);renderTasks('all');updateBadges();logAct('إتمام مهمة: '+t.title,'var(--green)');}}
+function editTask(id){openModal(id?'تعديل مهمة':'مهمة جديدة',taskForm(tasks.find(x=>x.id===id)||{}),()=>saveTask(id));}
+function deleteTask(id){if(!confirm('حذف؟'))return;tasks=tasks.filter(t=>t.id!==id);DB.set('tasks',tasks);renderTasks('all');updateBadges();}
+function taskForm(t={}){
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${t.employee===e.name?'selected':''}>${e.name}</option>`).join('');
+  return `<div class="field"><label class="flabel">عنوان المهمة *</label><input id="f-title" value="${t.title||''}"></div>
+    <div class="frow"><div class="field"><label class="flabel">الموظف</label><select id="f-emp">${eOpts}</select></div><div class="field"><label class="flabel">الاستحقاق</label><input type="date" id="f-due" value="${t.due||today()}"></div></div>
+    <div class="field"><label class="flabel">الأولوية</label><select id="f-pri"><option value="high" ${t.priority==='high'?'selected':''}>عالية 🔴</option><option value="medium" ${t.priority==='medium'?'selected':''}>متوسطة 🟡</option><option value="low" ${t.priority==='low'?'selected':''}>منخفضة 🟢</option></select></div>`;
+}
+function saveTask(id){
+  const title=gv('f-title').trim();if(!title){toast('العنوان مطلوب','error');return;}
+  if(id)Object.assign(tasks.find(x=>x.id===id),{title,employee:gv('f-emp'),due:gv('f-due'),priority:gv('f-pri')});
+  else tasks.push({id:uid(),title,employee:gv('f-emp'),due:gv('f-due'),priority:gv('f-pri'),status:'pending',created:Date.now()});
+  DB.set('tasks',tasks);renderTasks('all');updateBadges();closeModal();toast('تم الحفظ ✓');
+}
+
+// ══════════════════════════════════════════
+// EMPLOYEES
+// ══════════════════════════════════════════
+function renderEmployees(){
+  document.getElementById('emp-grid').innerHTML=employees.map((e,i)=>{
+    const ml=leads.filter(l=>l.employee===e.name);
+    const mt=tasks.filter(t=>t.employee===e.name&&t.status==='pending');
+    const md=deals.filter(d=>d.employee===e.name&&!['won','lost'].includes(d.status));
+    const st={assign:0,workin:0,pending:0,followup:0};
+    ml.forEach(l=>{if(l.stage&&st[l.stage]!==undefined)st[l.stage]++;});
+    return `<div class="emp-card">
+      <div class="emp-av" style="background:${EC[i%EC.length]}">${initials(e.name)}</div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:10px;font-family:'Cairo',sans-serif;">${e.name}</div>
+      ${[['الليدات الكلية',ml.length],['الصفقات النشطة',md.length],['المهام المعلقة',mt.length],['Assign',st.assign],['Work in it',st.workin],['Pending',st.pending],['Followup',st.followup]].map(([k,v])=>`<div class="emp-row"><span style="color:var(--text2);">${k}</span><span style="font-weight:700;color:var(--accent);">${v}</span></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════
+function renderReports(){
+  const tl=leads.length||1;
+  const won=deals.filter(d=>d.status==='won');
+  const tv=won.reduce((s,d)=>s+(d.value||0),0);
+  const conv=leads.filter(l=>l.status==='converted').length;
+  document.getElementById('report-stats').innerHTML=[
+    {lbl:'إجمالي الليدات',val:leads.length,c:'var(--blue)'},
+    {lbl:'نسبة التحويل',val:pct(conv,tl)+'%',c:'var(--green)'},
+    {lbl:'الصفقات المكتملة',val:won.length,c:'var(--accent)'},
+    {lbl:'إجمالي الإيرادات',val:fmtNum(tv)+' '+settings.currency,c:'var(--yellow)'},
+    {lbl:'الموظفون',val:employees.length,c:'var(--purple)'},
+  ].map(s=>`<div class="stat-card" style="--c:${s.c}"><div class="stat-lbl">${s.lbl}</div><div class="stat-val" style="font-size:18px;">${s.val}</div></div>`).join('');
+
+  const buildBar=(obj,maxV,id)=>document.getElementById(id).innerHTML=Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div class="prog-row"><span class="prog-lbl">${k}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(n,maxV)}%;background:var(--accent);"></div></div><span class="prog-num">${n}</span></div>`).join('');
+
+  const sc={},ss={};
+  leads.forEach(l=>{const k=SRC[l.source]||l.source;sc[k]=(sc[k]||0)+1;});
+  leads.forEach(l=>{const k=LS[l.status]||l.status;ss[k]=(ss[k]||0)+1;});
+  buildBar(sc,Math.max(...Object.values(sc),1),'rep-source');
+  buildBar(ss,Math.max(...Object.values(ss),1),'rep-status');
+
+  document.getElementById('rep-emp').innerHTML=employees.map((e,i)=>{const n=leads.filter(l=>l.employee===e.name).length;return `<div class="prog-row"><span class="prog-lbl">${e.name}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(n,tl)}%;background:${EC[i%EC.length]};"></div></div><span class="prog-num">${n}</span></div>`;}).join('');
+
+  const dm={};for(let i=13;i>=0;i--){const d=new Date(Date.now()-i*864e5).toISOString().slice(0,10);dm[d]=0;}
+  leads.forEach(l=>{const d=new Date(l.created).toISOString().slice(0,10);if(d in dm)dm[d]++;});
+  const maxD=Math.max(...Object.values(dm),1);
+  document.getElementById('rep-daily').innerHTML=Object.entries(dm).map(([d,n])=>`<div class="bc-col"><div class="bc-val">${n||''}</div><div class="bc-bar" style="height:${Math.round(n/maxD*65)+3}px;background:var(--accent);"></div><div class="bc-lbl">${new Date(d).toLocaleDateString('ar',{month:'short',day:'numeric'})}</div></div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// EXCEL ANALYZER
+// ══════════════════════════════════════════
+function xlLoad(input){
+  const file=input.files[0];if(!file)return;
+  document.getElementById('xl-fname').textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const sn=wb.SheetNames.find(n=>n.toLowerCase().includes('manag'))||wb.SheetNames[0];
+      const raw=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null,raw:false});
+      if(!raw.length){toast('الملف فارغ','error');return;}
+      const headers=raw[0],col={};
+      headers.forEach((h,i)=>{if(!h)return;const hn=String(h).trim();
+        if(hn.includes('اسم العميل'))col.name=i;
+        if(hn.includes('رقم العميل'))col.num=i;
+        if(hn.includes('استلم')||hn.includes('تاريخ الطلب'))col.req=i;
+        if(hn.includes('الموظف'))col.emp=i;
+        if(/Assign/i.test(hn))col.assign=i;
+        if(/Work/i.test(hn))col.workin=i;
+        if(/Pending/i.test(hn))col.pending=i;
+        if(/Followup/i.test(hn))col.followup=i;
+      });
+      const pd=v=>{if(!v)return null;const s=String(v);if(s.startsWith('=')||s==='#REF!')return null;const d=new Date(s);return isNaN(d)?null:d;};
+      xlData=[];
+      for(let i=1;i<raw.length;i++){
+        const r=raw[i];if(!r||r.every(v=>!v))continue;
+        const emp=col.emp!==undefined?String(r[col.emp]||'').trim():'';if(!emp)continue;
+        const at=pd(col.assign!==undefined?r[col.assign]:null);
+        const wt=pd(col.workin!==undefined?r[col.workin]:null);
+        const pt=pd(col.pending!==undefined?r[col.pending]:null);
+        const ft=pd(col.followup!==undefined?r[col.followup]:null);
+        const st=ft?'Followup':pt?'Pending':wt?'Work in it':at?'Assign':'';
+        xlData.push({idx:i,name:String(r[col.name]||'').trim(),num:String(r[col.num]||'').trim(),req:pd(col.req!==undefined?r[col.req]:null),emp,st,at,wt,pt,ft});
+      }
+      if(!xlData.length){toast('لا توجد بيانات صالحة','error');return;}
+      const emps=[...new Set(xlData.map(r=>r.emp).filter(Boolean))].sort();
+      const ef=document.getElementById('xl-emp-f'),ce=document.getElementById('xl-chart-emp');
+      ef.innerHTML='<option value="">كل الموظفين</option>';ce.innerHTML='<option value="">الكل</option>';
+      emps.forEach(e=>{ef.innerHTML+=`<option>${e}</option>`;ce.innerHTML+=`<option>${e}</option>`;});
+      const dates=[...new Set(xlData.map(r=>r.req?r.req.toISOString().slice(0,10):'').filter(Boolean))].sort().reverse();
+      const df=document.getElementById('xl-date-f');
+      df.innerHTML='<option value="">كل التواريخ</option>';
+      dates.forEach(d=>df.innerHTML+=`<option value="${d}">${fmtDate(new Date(d))}</option>`);
+      document.getElementById('xl-upload').style.display='none';
+      document.getElementById('xl-dash').style.display='block';
+      xlFilter();toast(`تم تحميل ${xlData.length} سجل ✓`);
+    }catch(err){toast('خطأ: '+err.message,'error');console.error(err);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function xlFilter(){
+  const ef=gv('xl-emp-f'),df=gv('xl-date-f');
+  xlFiltered=xlData.filter(r=>{
+    if(ef&&r.emp!==ef)return false;
+    if(df&&r.req&&r.req.toISOString().slice(0,10)!==df)return false;
+    return true;
+  });
+  document.getElementById('xl-cnt').textContent=`${xlFiltered.length} سجل`;
+  xlRenderAll();
+}
+
+function xlRenderAll(){xlStats();xlEmpCards();xlStages();xlDayChart();xlAlerts();xlTimes();xlTable();}
+
+function xlStats(){
+  const r=xlFiltered;
+  document.getElementById('xl-stats').innerHTML=[
+    {lbl:'إجمالي السجلات',val:r.length,c:'var(--blue)'},
+    {lbl:'Assign',val:r.filter(x=>x.at).length,c:'var(--accent)'},
+    {lbl:'Work in it',val:r.filter(x=>x.wt).length,c:'var(--green)'},
+    {lbl:'Followup',val:r.filter(x=>x.ft).length,c:'var(--purple)'},
+    {lbl:'الموظفون',val:new Set(r.map(x=>x.emp)).size,c:'var(--yellow)'},
+  ].map(s=>`<div class="stat-card" style="--c:${s.c}"><div class="stat-lbl">${s.lbl}</div><div class="stat-val">${s.val}</div></div>`).join('');
+}
+
+function xlGetEmpData(){
+  const m={};
+  xlFiltered.forEach(r=>{
+    if(!r.emp)return;
+    if(!m[r.emp])m[r.emp]={name:r.emp,total:0,assign:0,workin:0,pending:0,followup:0,resp:[]};
+    const e=m[r.emp];e.total++;
+    if(r.at)e.assign++;if(r.wt)e.workin++;if(r.pt)e.pending++;if(r.ft)e.followup++;
+    if(r.req&&r.at){const d=Math.round((r.at-r.req)/60000);if(d>=0&&d<1440)e.resp.push(d);}
+  });
+  return Object.values(m).map(e=>({...e,avg:e.resp.length?Math.round(e.resp.reduce((a,b)=>a+b,0)/e.resp.length):null})).sort((a,b)=>b.total-a.total);
+}
+
+function xlEmpCards(){
+  const data=xlGetEmpData();
+  document.getElementById('xl-emp-grid').innerHTML=data.map((e,i)=>`<div class="emp-card">
+    <div class="emp-av" style="background:${EC[i%EC.length]}">${initials(e.name)}</div>
+    <div style="font-size:13px;font-weight:800;margin-bottom:8px;">${e.name}</div>
+    ${[['الإجمالي',e.total],['Assign',e.assign],['Work in it',e.workin],['Pending',e.pending],['Followup',e.followup],['متوسط استجابة',e.avg?e.avg+'د':'—']].map(([k,v])=>`<div class="emp-row"><span style="color:var(--text2);">${k}</span><span style="font-weight:700;color:var(--accent);">${v}</span></div>`).join('')}
+  </div>`).join('')||'<p class="empty"><p>لا توجد بيانات</p></p>';
+  document.getElementById('xl-emp-tbody').innerHTML=data.map(e=>`<tr><td><strong>${e.name}</strong></td><td style="color:var(--accent);font-weight:700;">${e.total}</td><td>${e.assign}</td><td>${e.workin}</td><td>${e.pending}</td><td>${e.followup}</td><td>${e.avg?e.avg+' د':'—'}</td></tr>`).join('');
+}
+
+function xlEmpView(vw,btn){
+  document.getElementById('xl-emp-cards').style.display=vw==='cards'?'block':'none';
+  document.getElementById('xl-emp-table').style.display=vw==='table'?'block':'none';
+  document.querySelectorAll('#page-excel .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function xlStages(){
+  const r=xlFiltered,tot=r.length||1;
+  document.getElementById('xl-stages').innerHTML=[
+    {n:'Assign',cnt:r.filter(x=>x.at).length,c:'var(--blue)'},
+    {n:'Work in it',cnt:r.filter(x=>x.wt).length,c:'var(--green)'},
+    {n:'Pending',cnt:r.filter(x=>x.pt).length,c:'var(--yellow)'},
+    {n:'Followup',cnt:r.filter(x=>x.ft).length,c:'var(--purple)'},
+  ].map(s=>`<div class="prog-row"><span class="prog-lbl">${s.n}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(s.cnt,tot)}%;background:${s.c};"></div></div><span class="prog-num">${s.cnt}</span></div>`).join('');
+}
+
+function xlDayChart(){
+  const ef=gv('xl-chart-emp');
+  let rows=xlFiltered;if(ef)rows=rows.filter(r=>r.emp===ef);
+  const dm={};rows.forEach(r=>{if(!r.req)return;const d=r.req.toISOString().slice(0,10);dm[d]=(dm[d]||0)+1;});
+  const sorted=Object.entries(dm).sort((a,b)=>a[0]<b[0]?-1:1).slice(-10);
+  const mx=Math.max(...sorted.map(x=>x[1]),1);
+  document.getElementById('xl-day-chart').innerHTML=sorted.map(([d,n],i)=>`<div class="bc-col"><div class="bc-val">${n}</div><div class="bc-bar" style="height:${Math.round(n/mx*65)+3}px;background:${EC[i%EC.length]};"></div><div class="bc-lbl">${new Date(d).toLocaleDateString('ar',{month:'short',day:'numeric'})}</div></div>`).join('')||'<p style="color:var(--text3);font-size:12px;width:100%;text-align:center;">لا توجد بيانات</p>';
+}
+
+function xlAlerts(){
+  const now=new Date();
+  const al=xlFiltered.filter(r=>r.at&&!r.wt&&(now-r.at)/60000>30).slice(0,20);
+  document.getElementById('xl-alerts-cnt').textContent=al.length;
+  document.getElementById('xl-alerts').innerHTML=al.length
+    ?al.map(r=>`<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="width:7px;height:7px;border-radius:50%;background:var(--yellow);flex-shrink:0;margin-top:5px;"></div>
+      <div style="flex:1;"><div style="font-size:12px;font-weight:600;">${r.name||'#'+r.idx} ${r.num?'— '+r.num:''}</div><div style="font-size:10px;color:var(--text2);">${r.emp} · ${fmtTime(r.at)}</div></div>
+      <span class="badge bs-assign" style="font-size:10px;">Assign</span>
+    </div>`).join('')
+    :'<p style="font-size:12px;color:var(--green);text-align:center;padding:14px;">لا توجد طلبات متأخرة 🎉</p>';
+}
+
+function xlTimes(){
+  const r=xlFiltered;
+  const avg=pairs=>{const d=pairs.filter(([a,b])=>a&&b).map(([a,b])=>Math.abs(b-a)/60000);return d.length?Math.round(d.reduce((x,y)=>x+y,0)/d.length):null;};
+  const times=[
+    {lbl:'الطلب → Assign',v:avg(r.map(x=>[x.req,x.at])),c:'var(--accent)'},
+    {lbl:'Assign → Work in it',v:avg(r.map(x=>[x.at,x.wt])),c:'var(--green)'},
+    {lbl:'Work in it → Pending',v:avg(r.map(x=>[x.wt,x.pt])),c:'var(--yellow)'},
+    {lbl:'Pending → Followup',v:avg(r.map(x=>[x.pt,x.ft])),c:'var(--purple)'},
+  ];
+  const mx=Math.max(...times.map(t=>t.v||0),1);
+  document.getElementById('xl-times').innerHTML=times.map(t=>`<div class="prog-row"><span class="prog-lbl" style="font-size:11px;">${t.lbl}</span><div class="prog-bg"><div class="prog-fill" style="width:${t.v?Math.round(t.v/mx*100):0}%;background:${t.c};"></div></div><span class="prog-num" style="min-width:45px;">${t.v!==null?t.v+' د':'—'}</span></div>`).join('');
+}
+
+function xlTable(){
+  const rows=xlFiltered.slice(0,200);
+  document.getElementById('xl-tbl-cnt').textContent=`${xlFiltered.length} سجل`;
+  document.getElementById('xl-main-tbl').innerHTML=rows.map(r=>{
+    const first=r.at||r.wt||r.ft;
+    const resp=(r.req&&first)?Math.round((first-r.req)/60000):null;
+    const rc=resp!==null?(resp>30?'var(--red)':resp>10?'var(--yellow)':'var(--green)'):'';
+    const ft=d=>d?`<span style="font-size:10px;color:var(--text2);">${fmtTime(d)}</span>`:'<span style="color:var(--border);">—</span>';
+    return `<tr><td style="color:var(--text3);">${r.idx}</td><td><strong>${r.name||'—'}</strong></td><td style="color:var(--text2);">${r.num||'—'}</td><td style="font-size:11px;">${fmtDate(r.req)}</td><td><strong>${r.emp}</strong></td><td>${r.st?`<span class="badge bs-${r.st.toLowerCase().replace(' ','').replace('init','')}" style="font-size:10px;">${r.st}</span>`:'—'}</td><td>${ft(r.at)}</td><td>${ft(r.wt)}</td><td>${ft(r.pt)}</td><td>${ft(r.ft)}</td><td>${resp!==null?`<span style="color:${rc};font-weight:700;">${resp}د</span>`:'—'}</td></tr>`;
+  }).join('')||`<tr><td colspan="11"><div class="empty"><span class="material-icons-round mi">table_chart</span><p>لا توجد بيانات</p></div></td></tr>`;
+}
+
+function xlExport(){
+  if(!xlFiltered.length){toast('لا توجد بيانات','info');return;}
+  const wb=XLSX.utils.book_new();
+  const d=xlFiltered.map(r=>({'الاسم':r.name,'الرقم':r.num,'التاريخ':fmtDate(r.req),'الموظف':r.emp,'الحالة':r.st,'Assign':fmtTime(r.at),'Work in it':fmtTime(r.wt),'Pending':fmtTime(r.pt),'Followup':fmtTime(r.ft)}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d),'البيانات');
+  const ed=xlGetEmpData().map(e=>({'الموظف':e.name,'الإجمالي':e.total,'Assign':e.assign,'Work in it':e.workin,'Pending':e.pending,'Followup':e.followup,'متوسط استجابة (د)':e.avg||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ed),'الموظفون');
+  XLSX.writeFile(wb,'crm_analysis_'+today()+'.xlsx');toast('تم التصدير ✓');
+}
+
+function xlImport(){
+  const nl=xlFiltered.filter(r=>r.name&&!String(r.name).match(/^\d+$/)).map(r=>({
+    id:uid(),name:String(r.name).trim(),phone:r.num||'',source:'other',status:'new',
+    dest:'',employee:r.emp||employees[0]?.name||'',created:r.req?r.req.getTime():Date.now(),
+    stage:r.ft?'followup':r.pt?'pending':r.wt?'workin':r.at?'assign':null,
+    assign_t:r.at?r.at.getTime():null,workin_t:r.wt?r.wt.getTime():null,
+    pending_t:r.pt?r.pt.getTime():null,followup_t:r.ft?r.ft.getTime():null,
+  }));
+  if(!nl.length){toast('لا توجد سجلات','info');return;}
+  leads=[...leads,...nl];DB.set('leads',leads);updateBadges();
+  toast(`تم استيراد ${nl.length} ليد ✓`);
+  logAct('استيراد '+nl.length+' ليد من Excel','var(--teal)');
+  navigate('leads');
+}
+
+// Drop zone events
+const xlDrop=document.getElementById('xl-drop');
+if(xlDrop){
+  xlDrop.addEventListener('dragover',e=>{e.preventDefault();xlDrop.classList.add('drag');});
+  xlDrop.addEventListener('dragleave',()=>xlDrop.classList.remove('drag'));
+  xlDrop.addEventListener('drop',e=>{
+    e.preventDefault();xlDrop.classList.remove('drag');
+    const f=e.dataTransfer.files[0];
+    if(f){const inp=document.getElementById('xl-file');const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;xlLoad(inp);}
+  });
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+function isAdmin(){ return employees.find(e=>e.id===currentUser)?.role==='admin'; }
+
+function renderSettings(){
+  const admin = isAdmin();
+  document.getElementById('s-company').value=settings.company||'';
+  document.getElementById('s-currency').value=settings.currency||'ريال';
+  document.getElementById('s-manager').value=settings.manager||'';
+  // قسم إدارة الحسابات — للمدير فقط
+  const empCard=document.getElementById('emp-management-card');
+  if(empCard) empCard.style.display=admin?'block':'none';
+  const dataCard=document.getElementById('data-card');
+  if(dataCard) dataCard.style.display=admin?'block':'none';
+  if(!admin){
+    const msg=document.getElementById('settings-non-admin-msg');
+    if(msg) msg.style.display='flex';
+    return;
+  }
+  const msg=document.getElementById('settings-non-admin-msg');
+  if(msg) msg.style.display='none';
+  const addEmpRow=document.getElementById('add-emp-row');
+  if(addEmpRow) addEmpRow.style.display='flex';
+  document.getElementById('emp-settings-list').innerHTML=employees.map((e,i)=>{
+    const isSelf=e.id===currentUser;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:'+EC[i%EC.length]+';display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">'+initials(e.name)+'</div>'
+      +'<div style="flex:1;">'
+        +'<div style="font-size:13px;font-weight:700;">'+e.name+(isSelf?' <span style="font-size:10px;background:rgba(255,107,53,.12);color:var(--accent);padding:2px 7px;border-radius:99px;">أنت</span>':'')+'</div>'
+        +'<div style="font-size:11px;color:'+(ROLE_COLOR[e.role]||'var(--text3)')+';">'+( ROLES[e.role]||e.role)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:5px;align-items:center;">'
+        +'<button class="btn btn-g btn-xs" onclick="openPermModal(\''+e.id+'\')" title="الصلاحيات"><span class="material-icons-round" style="font-size:13px;">admin_panel_settings</span> صلاحيات</button>'
+        +'<button class="btn btn-g btn-xs" onclick="editEmpModal(\''+e.id+'\')" title="تعديل"><span class="material-icons-round" style="font-size:13px;">edit</span></button>'
+        +(!isSelf?'<button class="btn-icon" style="color:var(--red);" onclick="removeEmp(\''+e.id+'\')" title="حذف"><span class="material-icons-round" style="font-size:14px;">delete</span></button>':'')
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+function saveSettings(){
+  settings.company=gv('s-company')||'نظام إدارة العملاء';
+  settings.currency=gv('s-currency');
+  settings.manager=gv('s-manager');
+  DB.set('settings',settings);applyTheme();applyCompanyName();
+  document.getElementById('u-name').textContent=settings.manager;
+  document.getElementById('u-av').textContent=initials(settings.manager||'م');
+  toast('تم الحفظ ✓');
+}
+function addEmployee(){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
+  const n=gv('new-emp').trim();if(!n)return;
+  const newEmp={
+    id:uid(),name:n,role:'sales',pin:'0000',
+    perms:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,
+           employees:false,reports:false,excel:false,settings:false,
+           addLead:true,editLead:true,deleteLead:false,exportLeads:false,
+           addDeal:true,deleteDeal:false,addClient:true,deleteClient:false}
+  };
+  employees.push(newEmp);DB.set('employees',employees);
+  document.getElementById('new-emp').value='';renderSettings();
+  toast('تم إضافة '+n+' ✓ — تذكر تعيين PIN والصلاحيات');
+}
+function removeEmp(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  if(e.id===currentUser){toast('لا يمكنك حذف حسابك الخاص','error');return;}
+  if(!confirm('حذف حساب '+e.name+'؟'))return;
+  employees=employees.filter(x=>x.id!==id);DB.set('employees',employees);renderSettings();
+  toast('تم حذف '+e.name);
+}
+function editEmpModal(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  openModal('تعديل: '+e.name,`
+    <div class="frow">
+      <div class="field"><label class="flabel">الاسم</label><input id="f-ename" value="${e.name}"></div>
+      <div class="field"><label class="flabel">PIN (رمز الدخول)</label><input id="f-epin" type="password" value="${e.pin}" placeholder="أرقام فقط" maxlength="6"></div>
+    </div>
+    <div class="field"><label class="flabel">الدور</label>
+      <select id="f-erole">
+        ${Object.entries(ROLES).map(([k,v])=>'<option value="'+k+'" '+(e.role===k?'selected':'')+'>'+v+'</option>').join('')}
+      </select>
+    </div>`,()=>{
+    e.name=gv('f-ename').trim()||e.name;
+    e.pin=gv('f-epin')||e.pin;
+    e.role=gv('f-erole');
+    DB.set('employees',employees);renderSettings();closeModal();toast('تم الحفظ ✓');
+  });
+}
+function applyTheme(){if(settings.accent)document.documentElement.style.setProperty('--accent',settings.accent);}
+function applyCompanyName(){
+  const name = settings.company || 'نظام إدارة العملاء';
+  document.title = name;
+  const sb = document.getElementById('sb-company'); if(sb) sb.textContent = name;
+  const tm = document.getElementById('sb-teamname'); if(tm) tm.textContent = name;
+  const lc = document.getElementById('login-company'); if(lc) lc.textContent = name;
+  const fc = document.getElementById('footer-company'); if(fc) fc.textContent = name;
+}
+function pickColor(c,el){
+  settings.accent=c;
+  document.querySelectorAll('#color-swatches div').forEach(d=>d.style.outline='none');
+  el.style.outline='2px solid #fff';el.style.outlineOffset='2px';
+  applyTheme();
+}
+function openPermModal(id){
+  if(!isAdmin()){toast('هذه الصلاحية للمدير فقط','error');return;}
+  if(employees.find(e=>e.id===currentUser)?.role !== 'admin'){toast('ليس لديك صلاحية','error');return;}
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  const ei=employees.indexOf(e);
+
+  const pages=['dashboard','leads','clients','deals','pipeline','tasks','employees','reports','excel','settings'];
+  const actions=['addLead','editLead','deleteLead','exportLeads','addDeal','deleteDeal','addClient','deleteClient'];
+
+  const pagesHtml=pages.map(p=>`
+    <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s2);border-radius:8px;cursor:pointer;margin-bottom:5px;">
+      <span style="font-size:13px;">${PERM_LABELS[p]}</span>
+      <input type="checkbox" id="pm-${p}" ${e.perms[p]?'checked':''} style="width:16px;height:16px;accent-color:var(--accent);">
+    </label>`).join('');
+
+  const actionsHtml=actions.map(a=>`
+    <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s2);border-radius:8px;cursor:pointer;margin-bottom:5px;">
+      <span style="font-size:13px;">${PERM_LABELS[a]}</span>
+      <input type="checkbox" id="pm-${a}" ${e.perms[a]?'checked':''} style="width:16px;height:16px;accent-color:var(--green);">
+    </label>`).join('');
+
+  openModal(`صلاحيات: ${e.name}`,`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:10px;margin-bottom:14px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:${EC[ei%EC.length]};display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;">${initials(e.name)}</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;">${e.name}</div>
+        <div style="font-size:11px;color:${ROLE_COLOR[e.role]};">${ROLES[e.role]||e.role}</div>
+      </div>
+      <div style="margin-right:auto;display:flex;gap:6px;">
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','admin')">مدير</button>
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','sales')">مبيعات</button>
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','viewer')">عارض</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 الصفحات</div>
+        ${pagesHtml}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚡ الإجراءات</div>
+        ${actionsHtml}
+      </div>
+    </div>`,()=>{
+    [...pages,...actions].forEach(p=>{
+      const el=document.getElementById('pm-'+p);
+      if(el)e.perms[p]=el.checked;
+    });
+    DB.set('employees',employees);renderSettings();closeModal();
+    toast('تم حفظ صلاحيات '+e.name+' ✓');
+    if(currentUser===id)applyPermUI();
+  });
+  document.getElementById('mo-save').textContent='حفظ الصلاحيات';
+}
+
+function applyPreset(id,role){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  const presets={
+    admin:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,employees:true,reports:true,excel:true,settings:true,addLead:true,editLead:true,deleteLead:true,exportLeads:true,addDeal:true,deleteDeal:true,addClient:true,deleteClient:true},
+    sales:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,employees:false,reports:false,excel:false,settings:false,addLead:true,editLead:true,deleteLead:false,exportLeads:false,addDeal:true,deleteDeal:false,addClient:true,deleteClient:false},
+    viewer:{dashboard:true,leads:true,clients:false,deals:false,pipeline:false,tasks:true,employees:false,reports:true,excel:false,settings:false,addLead:false,editLead:false,deleteLead:false,exportLeads:false,addDeal:false,deleteDeal:false,addClient:false,deleteClient:false}
+  };
+  if(!presets[role])return;
+  e.role=role;
+  Object.assign(e.perms,presets[role]);
+  // تحديث checkboxes في الـ modal
+  Object.entries(presets[role]).forEach(([p,v])=>{
+    const el=document.getElementById('pm-'+p);if(el)el.checked=v;
+  });
+  toast('تم تطبيق قالب '+ROLES[role]+' — اضغط حفظ للتأكيد','info');
+}
+
+function exportBackup(){
+  const blob=new Blob([JSON.stringify({leads,clients,deals,tasks,activity,settings,employees},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bw_backup_'+today()+'.json';a.click();
+  toast('تم تصدير النسخة الاحتياطية ✓');
+}
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.leads){leads=data.leads;DB.set('leads',leads);}
+      if(data.clients){clients=data.clients;DB.set('clients',clients);}
+      if(data.deals){deals=data.deals;DB.set('deals',deals);}
+      if(data.tasks){tasks=data.tasks;DB.set('tasks',tasks);}
+      if(data.settings){settings=data.settings;DB.set('settings',settings);applyTheme();}
+      if(data.employees){employees=data.employees;DB.set('employees',employees);}
+      if(data.activity){activity=data.activity;DB.set('activity',activity);}
+      renderPage(currentPage);updateBadges();toast('تم الاستيراد بنجاح ✓');
+    }catch{toast('ملف غير صالح','error');}
+  };
+  reader.readAsText(file);input.value='';
+}
+function resetData(){
+  if(!confirm('مسح كل البيانات؟'))return;
+  leads=[];clients=[];deals=[];tasks=[];activity=[];saveAll();seedDemo();
+  renderPage(currentPage);updateBadges();toast('تم إعادة الضبط','info');
+}
+
+// ══════════════════════════════════════════
+// OFFER PAGE
+// ══════════════════════════════════════════
+function openOfferPage(){
+  const ov=document.getElementById('offer-overlay');
+  ov.classList.add('open');
+  const content=document.getElementById('offer-content');
+  if(!content.innerHTML.trim()){
+    content.innerHTML='<iframe src="tourism_offer_generator.html" style="width:100%;height:100%;border:none;" title="مولد العروض"></iframe>';
+  }
+}
+function closeOfferPage(){
+  document.getElementById('offer-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════
+function buildNotifs(){
+  const nlist=[];
+  const td=today();
+  tasks.filter(t=>t.status==='pending'&&t.due<td).forEach(t=>nlist.push({text:'مهمة متأخرة: '+t.title,c:'var(--red)',icon:'warning'}));
+  tasks.filter(t=>t.status==='pending'&&t.due===td).forEach(t=>nlist.push({text:'مهمة اليوم: '+t.title,c:'var(--yellow)',icon:'task_alt'}));
+  leads.filter(l=>l.status==='new').slice(0,3).forEach(l=>nlist.push({text:'ليد جديد: '+l.name,c:'var(--blue)',icon:'person_search'}));
+  document.getElementById('notif-dot').style.display=nlist.length?'block':'none';
+  document.getElementById('notif-list').innerHTML=nlist.length
+    ?nlist.map(n=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);">
+      <span class="material-icons-round" style="color:${n.c};font-size:17px;">${n.icon}</span>
+      <span style="font-size:12px;">${n.text}</span>
+    </div>`).join('')
+    :'<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">لا توجد تنبيهات 🎉</div>';
+}
+function toggleNotif(){
+  const p=document.getElementById('notif-panel');
+  p.classList.toggle('open');
+}
+function clearNotifs(){
+  tasks.filter(t=>t.status==='pending'&&t.due<=today());
+  document.getElementById('notif-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">لا توجد تنبيهات 🎉</div>';
+  document.getElementById('notif-dot').style.display='none';
+  document.getElementById('notif-panel').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notif-panel'),b=document.getElementById('notif-btn');
+  if(p&&p.classList.contains('open')&&!p.contains(e.target)&&!b.contains(e.target))p.classList.remove('open');
+});
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+let modalFn=null;
+function openModal(title,body,saveFn){
+  document.getElementById('mo-title').textContent=title;
+  document.getElementById('mo-body').innerHTML=body;
+  document.getElementById('mo-foot').style.display='flex';
+  modalFn=saveFn;
+  document.getElementById('mo-overlay').classList.add('open');
+  document.getElementById('mo-save').onclick=()=>{if(modalFn)modalFn();};
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('mo-overlay'))return;
+  document.getElementById('mo-overlay').classList.remove('open');
+  modalFn=null;
+}
+
+// ══════════════════════════════════════════
+// ADD MODAL ROUTING
+// ══════════════════════════════════════════
+function openAddModal(){
+  if(currentPage==='leads'||currentPage==='dashboard') openModal('ليد جديد',leadForm({}),()=>saveLead(null));
+  else if(currentPage==='clients') openModal('عميل جديد',clientForm({}),()=>saveClient(null));
+  else if(currentPage==='deals'||currentPage==='pipeline') openModal('صفقة جديدة',dealForm({}),()=>saveDeal(null));
+  else if(currentPage==='tasks') openModal('مهمة جديدة',taskForm({}),()=>saveTask(null));
+}
+
+// ══════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════
+function exportPage(){
+  if(currentPage==='leads') exportLeads();
+  else if(currentPage==='clients'){
+    const d=clients.map(c=>({'الاسم':c.name,'الجوال':c.phone,'البريد':c.email,'الوجهة':c.dest,'النوع':c.type}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d),'العملاء');
+    XLSX.writeFile(wb,'clients_'+today()+'.xlsx');toast('تم التصدير ✓');
+  }
+  else if(currentPage==='deals'){
+    const d=deals.map(x=>({'العميل':x.client,'الوجهة':x.dest,'التاريخ':x.date,'القيمة':x.value,'الحالة':DL[x.status],'الموظف':x.employee}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d),'الصفقات');
+    XLSX.writeFile(wb,'deals_'+today()+'.xlsx');toast('تم التصدير ✓');
+  }
+  else toast('اختر صفحة لتصديرها','info');
+}
+
+// ══════════════════════════════════════════
+// GLOBAL SEARCH
+// ══════════════════════════════════════════
+function globalSearch(q){
+  if(!q||q.length<2)return;
+  const lr=leads.filter(l=>l.name.includes(q)||l.phone.includes(q));
+  const cr=clients.filter(c=>c.name.includes(q)||c.phone.includes(q));
+  if(lr.length){navigate('leads');setTimeout(()=>{document.getElementById('lead-search').value=q;renderLeads();},50);}
+  else if(cr.length){navigate('clients');setTimeout(()=>{document.getElementById('cl-search').value=q;renderClients();},50);}
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg,type='success'){
+  const colors={success:'var(--green)',error:'var(--red)',info:'var(--blue)'};
+  const icons={success:'check_circle',error:'error',info:'info'};
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<span class="material-icons-round" style="color:${colors[type]};font-size:17px;">${icons[type]}</span>${msg}`;
+  document.getElementById('toast-wrap').appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+
+
+function toggleSbSection(hdr){
+  const body = hdr.nextElementSibling;
+  const arrow = hdr.querySelector('.sb-section-arrow');
+  if(body.style.maxHeight && body.style.maxHeight!=='0px'){
+    body.style.maxHeight='0px';body.style.overflow='hidden';
+    if(arrow){arrow.classList.remove('open');arrow.classList.add('closed');}
+  } else {
+    body.style.maxHeight=body.scrollHeight+'px';body.style.overflow='visible';
+    if(arrow){arrow.classList.remove('closed');arrow.classList.add('open');}
+  }
+}
+function toggleGroup(hdr){
+  const body=hdr.nextElementSibling;
+  if(!body)return;
+  const isOpen=body.style.maxHeight&&body.style.maxHeight!=='0px';
+  body.style.maxHeight=isOpen?'0px':body.scrollHeight+'px';
+  body.style.overflow=isOpen?'hidden':'visible';
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+// ══ LOGIN SYSTEM ══
+let loginTarget=null;
+
+function showLogin(){
+  document.getElementById('login-screen').style.display='flex';
+  applyCompanyName();
+  renderLoginList();
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-step2').style.display='none';
+}
+
+function renderLoginList(){
+  const el=document.getElementById('login-emp-list');
+  if(!employees.length){
+    el.innerHTML=`<div style="text-align:center;padding:20px 0 8px;color:var(--text3);">
+      <span class="material-icons-round" style="font-size:38px;display:block;margin-bottom:8px;opacity:.35;">group_add</span>
+      <p style="font-size:13px;margin-bottom:4px;color:var(--text2);font-weight:600;">لا يوجد مستخدمون بعد</p>
+      <p style="font-size:11px;">اضغط الزر أدناه لإنشاء أول حساب</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML=employees.map((e,i)=>`
+    <div onclick="selectEmp('${e.id}')" style="display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--s2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .13s;" 
+      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="width:38px;height:38px;border-radius:10px;background:${EC[i%EC.length]};display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">${initials(e.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">${e.name}</div>
+        <div style="font-size:11px;color:${ROLE_COLOR[e.role]||'var(--text3)'};">${ROLES[e.role]||e.role}</div>
+      </div>
+      <span class="material-icons-round" style="color:var(--text3);font-size:16px;">chevron_left</span>
+    </div>`).join('');
+}
+
+function selectEmp(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  loginTarget=id;
+  const i=employees.indexOf(e);
+  document.getElementById('pin-emp-av').style.background=EC[i%EC.length];
+  document.getElementById('pin-emp-av').textContent=initials(e.name);
+  document.getElementById('pin-emp-name').textContent=e.name;
+  document.getElementById('pin-emp-role').textContent=ROLES[e.role]||e.role;
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').textContent='';
+  document.getElementById('login-step1').style.display='none';
+  document.getElementById('login-step2').style.display='block';
+  // Build numpad
+  const np=document.getElementById('numpad');
+  np.innerHTML=[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(n=>`
+    <button onclick="numpadClick('${n}')" style="padding:13px;background:var(--s2);border:1px solid var(--border);border-radius:9px;font-size:${n==='✓'?'16px':'18px'};font-weight:700;color:${n==='✓'?'var(--green)':n==='⌫'?'var(--red)':'var(--text)'};cursor:pointer;transition:background .1s;font-family:'Tajawal',sans-serif;"
+      onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">${n}</button>`).join('');
+  setTimeout(()=>document.getElementById('pin-input').focus(),50);
+}
+
+function numpadClick(v){
+  const inp=document.getElementById('pin-input');
+  if(v==='⌫'){inp.value=inp.value.slice(0,-1);}
+  else if(v==='✓'){doLogin();}
+  else{if(inp.value.length<6)inp.value+=v;}
+}
+
+function backToStep1(){
+  loginTarget=null;
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-step2').style.display='none';
+}
+
+function doLogin(){
+  const pin=document.getElementById('pin-input').value.trim();
+  const e=employees.find(x=>x.id===loginTarget);
+  if(!e){toast('اختر موظفاً أولاً','error');return;}
+  if(pin!==String(e.pin)){
+    document.getElementById('pin-error').textContent='رمز PIN غير صحيح';
+    document.getElementById('pin-input').value='';
+    document.getElementById('pin-input').focus();
+    return;
+  }
+  currentUser=e.id;
+  DB.set('currentUser',currentUser);
+  document.getElementById('login-screen').style.display='none';
+  bootApp();
+}
+
+function setupFirst(){
+  // نعرض الفورم داخل شاشة الدخول مباشرة (فوق z-index 9000)
+  const el = document.getElementById('login-emp-list');
+  el.innerHTML = `
+    <div style="background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);border-radius:10px;padding:13px;margin-bottom:12px;font-size:12px;color:var(--text2);display:flex;gap:8px;align-items:center;">
+      <span class="material-icons-round" style="color:var(--accent);font-size:18px;">admin_panel_settings</span>
+      <span>إنشاء حساب المدير الأول — كامل الصلاحيات</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">الاسم *</label>
+        <input id="sf-name" placeholder="اسم المدير" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;width:100%;font-family:'Tajawal',sans-serif;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">رمز PIN * (أرقام فقط)</label>
+        <input id="sf-pin" type="password" placeholder="مثال: 1234" maxlength="6"
+          style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:18px;letter-spacing:6px;outline:none;width:100%;font-family:'Tajawal',sans-serif;">
+      </div>
+      <div id="sf-err" style="color:var(--red);font-size:12px;min-height:16px;text-align:center;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="doSetupFirst()" class="btn btn-p" style="flex:1;padding:11px;font-size:13px;">
+          <span class="material-icons-round" style="font-size:15px;">check_circle</span> إنشاء الحساب
+        </button>
+        <button onclick="renderLoginList()" class="btn btn-g" style="padding:11px 14px;">
+          <span class="material-icons-round" style="font-size:15px;">arrow_back</span>
+        </button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('sf-name')?.focus(), 50);
+}
+
+function doSetupFirst(){
+  const n = (document.getElementById('sf-name')?.value||'').trim();
+  const p = (document.getElementById('sf-pin')?.value||'').trim();
+  const errEl = document.getElementById('sf-err');
+  if(!n){ errEl.textContent='يرجى إدخال الاسم'; return; }
+  if(!p||p.length < 4){ errEl.textContent='PIN يجب أن يكون 4 أرقام على الأقل'; return; }
+  const newAdmin={
+    id:uid(), name:n, role:'admin', pin:p,
+    perms:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,
+           employees:true,reports:true,excel:true,settings:true,
+           addLead:true,editLead:true,deleteLead:true,exportLeads:true,
+           addDeal:true,deleteDeal:true,addClient:true,deleteClient:true}
+  };
+  employees.push(newAdmin);
+  DB.set('employees', employees);
+  toast('تم إنشاء حساب '+n+' ✓');
+  renderLoginList();
+}
+function toggleUserMenu(){
+  const m=document.getElementById('user-menu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',e=>{
+  const m=document.getElementById('user-menu');
+  const uc=document.querySelector('.user-card');
+  if(m&&m.style.display!=='none'&&!m.contains(e.target)&&!uc.contains(e.target))
+    m.style.display='none';
+});
+function logout(){
+  currentUser=null;
+  DB.set('currentUser',null);
+  showLogin();
+}
+
+function bootApp(){
+  const u=employees.find(e=>e.id===currentUser);if(!u)return;
+  applyTheme();
+  applyCompanyName();
+  document.getElementById('u-name').textContent=u.name;
+  const i=employees.indexOf(u);
+  document.getElementById('u-av').style.background=EC[i%EC.length];
+  document.getElementById('u-av').textContent=initials(u.name);
+  document.getElementById('u-role-lbl').textContent=ROLES[u.role]||'';
+  applyPermUI();
+  // اذهب لأول صفحة مسموح بها
+  const pages=['dashboard','leads','clients','deals','tasks','reports'];
+  const first=pages.find(p=>u.perms[p])||'dashboard';
+  navigate(first);
+  updateBadges();
+}
+
+// تحديث navigate ليتحقق من الصلاحيات
+const _origNavigate=navigate;
+navigate=function(page){
+  if(currentUser){
+    const u=employees.find(e=>e.id===currentUser);
+    if(u&&u.perms[page]===false){toast('ليس لديك صلاحية الوصول لهذه الصفحة','error');return;}
+  }
+  _origNavigate(page);
+  applyPermUI();
+};
+
+// ════ INIT ════
+applyTheme();
+applyCompanyName();
+if(currentUser&&employees.find(e=>e.id===currentUser)){
+  bootApp();
+}else{
+  showLogin();
+}
+updateBadges();
+</script>
+</body>
+</html>
