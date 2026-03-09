@@ -438,7 +438,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   <!-- CRM Teamspace -->
   <div class="zteam">
     <div class="zteam-badge" style="width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#4A90D9,#6B4FD8);display:grid;place-items:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;">CRM</div>
-    <span class="zteam-name" style="font-size:12px;font-weight:600;color:var(--ztext2);">نظام إدارة العملاء</span>
+    <span class="zteam-name" id="sb-teamname" style="font-size:12px;font-weight:600;color:var(--ztext2);">نظام إدارة العملاء</span>
     <span class="material-icons-round zteam-arrow" style="font-size:16px;color:var(--ztext3);">expand_more</span>
   </div>
 
@@ -999,8 +999,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 </div>
 
 <!-- LOGIN SCREEN -->
-<div id="login-screen" style="position:fixed;inset:0;z-index:9000;background:#0D1117;align-items:center;justify-content:center;flex-direction:column;">
-  <div style="background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:380px;max-width:95vw;">
+<div id="login-screen" style="position:fixed;inset:0;z-index:9000;background:#0D1117;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;">
+  <div style="background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:32px 28px;width:420px;max-width:95vw;margin:40px auto 40px;">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#D63000);display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,107,53,.4);">CRM</div>
       <div style="font-size:20px;font-weight:900;font-family:'Cairo',sans-serif;" id="login-company">نظام إدارة العملاء</div>
@@ -1010,7 +1010,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     <!-- اختيار الموظف -->
     <div id="login-step1">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);">اختر المستخدم</div>
-      <div id="login-emp-list" style="display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;"></div>
+      <div id="login-emp-list" style="display:flex;flex-direction:column;gap:7px;"></div>
+      <!-- زر إنشاء حساب — يظهر دائماً -->
+      <div id="setup-btn-wrap" style="margin-top:12px;">
+        <button class="btn btn-p" style="width:100%;padding:11px;font-size:13px;" onclick="setupFirst()">
+          <span class="material-icons-round" style="font-size:16px;">person_add</span> إنشاء حساب جديد
+        </button>
+      </div>
     </div>
 
     <!-- إدخال الـ PIN -->
@@ -1041,7 +1047,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
       </button>
     </div>
   </div>
-  <div style="font-size:11px;color:var(--text3);margin-top:16px;">© نظام إدارة العملاء</div>
+  <div style="font-size:11px;color:var(--text3);margin:20px 0 10px;">© <span id="footer-company">نظام إدارة العملاء</span></div>
 </div>
 
 <div class="toast-wrap" id="toast-wrap"></div>
@@ -1076,9 +1082,17 @@ const gv=id=>document.getElementById(id)?.value||'';
 // STATE
 // ══════════════════════════════════════════
 let settings  = DB.get('settings')  || {company:'نظام إدارة العملاء',currency:'ريال',accent:'#FF6B35',manager:'المدير'};
+DB.set('settings', settings);
+// ── تصحيح: إذا employees في localStorage قديم (array of strings)، امسحه ──
+{
+  const raw = DB.get('employees');
+  if(raw && raw.length && typeof raw[0] === 'string'){
+    DB.set('employees', []);
+  }
+}
 let employees = DB.get('employees') || [];
 // currentUser: الموظف المسجل دخول حالياً
-let currentUser = DB.get('currentUser') || null;
+let currentUser = null; // دايماً يبدأ بتسجيل دخول جديد
 let leads     = DB.get('leads')     || [];
 let clients   = DB.get('clients')   || [];
 let deals     = DB.get('deals')     || [];
@@ -1891,8 +1905,7 @@ function saveSettings(){
   settings.company=gv('s-company')||'نظام إدارة العملاء';
   settings.currency=gv('s-currency');
   settings.manager=gv('s-manager');
-  DB.set('settings',settings);applyTheme();
-  document.getElementById('sb-company').textContent=settings.company;
+  DB.set('settings',settings);applyTheme();applyCompanyName();
   document.getElementById('u-name').textContent=settings.manager;
   document.getElementById('u-av').textContent=initials(settings.manager||'م');
   toast('تم الحفظ ✓');
@@ -1939,6 +1952,14 @@ function editEmpModal(id){
   });
 }
 function applyTheme(){if(settings.accent)document.documentElement.style.setProperty('--accent',settings.accent);}
+function applyCompanyName(){
+  const name = settings.company || 'نظام إدارة العملاء';
+  document.title = name;
+  const sb = document.getElementById('sb-company'); if(sb) sb.textContent = name;
+  const tm = document.getElementById('sb-teamname'); if(tm) tm.textContent = name;
+  const lc = document.getElementById('login-company'); if(lc) lc.textContent = name;
+  const fc = document.getElementById('footer-company'); if(fc) fc.textContent = name;
+}
 function pickColor(c,el){
   settings.accent=c;
   document.querySelectorAll('#color-swatches div').forEach(d=>d.style.outline='none');
@@ -2189,8 +2210,8 @@ function toggleGroup(hdr){
 let loginTarget=null;
 
 function showLogin(){
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('login-company').textContent=settings.company||'نظام إدارة العملاء';
+  const ls=document.getElementById('login-screen');ls.style.display='flex';ls.style.flexDirection='column';ls.style.alignItems='center';ls.style.justifyContent='center';
+  applyCompanyName();
   renderLoginList();
   document.getElementById('login-step1').style.display='block';
   document.getElementById('login-step2').style.display='none';
@@ -2199,13 +2220,10 @@ function showLogin(){
 function renderLoginList(){
   const el=document.getElementById('login-emp-list');
   if(!employees.length){
-    el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--text3);">
-      <span class="material-icons-round" style="font-size:36px;display:block;margin-bottom:8px;opacity:.4;">group_add</span>
+    el.innerHTML=`<div style="text-align:center;padding:20px 0 8px;color:var(--text3);">
+      <span class="material-icons-round" style="font-size:38px;display:block;margin-bottom:8px;opacity:.35;">group_add</span>
       <p style="font-size:13px;margin-bottom:4px;color:var(--text2);font-weight:600;">لا يوجد مستخدمون بعد</p>
-      <p style="font-size:11px;">يرجى إضافة مستخدم أول من خلال زر "إعداد النظام" أدناه</p>
-      <button class="btn btn-p" style="margin-top:14px;" onclick="setupFirst()">
-        <span class="material-icons-round" style="font-size:15px;">settings</span> إعداد النظام
-      </button>
+      <p style="font-size:11px;">اضغط الزر أدناه لإنشاء أول حساب</p>
     </div>`;
     return;
   }
@@ -2338,7 +2356,7 @@ function logout(){
 function bootApp(){
   const u=employees.find(e=>e.id===currentUser);if(!u)return;
   applyTheme();
-  document.getElementById('sb-company').textContent=settings.company||'نظام إدارة العملاء';
+  applyCompanyName();
   document.getElementById('u-name').textContent=u.name;
   const i=employees.indexOf(u);
   document.getElementById('u-av').style.background=EC[i%EC.length];
@@ -2365,12 +2383,8 @@ navigate=function(page){
 
 // ════ INIT ════
 applyTheme();
-document.getElementById('login-company').textContent=settings.company||'نظام إدارة العملاء';
-if(currentUser&&employees.find(e=>e.id===currentUser)){
-  bootApp();
-}else{
-  showLogin();
-}
+applyCompanyName();
+showLogin();  // دايماً ابدأ بشاشة الدخول
 updateBadges();
 </script>
 </body>
