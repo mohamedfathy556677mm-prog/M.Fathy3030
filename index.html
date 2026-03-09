@@ -3,466 +3,566 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>بوابات العالم — النظام المتكامل</title>
+<title>نظام إدارة العملاء</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+/* ════════════════════════════════
+   GLOBAL RESET & VARIABLES
+════════════════════════════════ */
 :root{
-  /* Main BG */
-  --bg:#0D1117;--s1:#161B22;--s2:#1C2230;--s3:#222C3C;--s4:#28364A;
+  /* Content background */
+  --bg:#0D1117;
+  --s1:#161B22;--s2:#1C2230;--s3:#222C3C;
   --border:#2D3B4E;--border2:#3A4D62;
-  /* Accent */
+  /* Accent colors */
   --accent:#FF6B35;
-  /* Colors */
   --blue:#4A90D9;--green:#2ECC71;--yellow:#F5A623;
   --red:#E74C3C;--purple:#9B59B6;--teal:#1ABC9C;--pink:#E91E8C;
   /* Text */
-  --text:#D0D6E0;--text2:#8B96A8;--text3:#5A6478;
-  /* Sidebar exact Zoho colors */
-  --sw:215px;
-  --zsb:#1C2133;--zsb2:#242940;--zsb3:#2D344F;
-  --zsb-text:#9BA3BF;--zsb-active:#C5CBE0;
-  --zsb-accent:#4A90D9;
+  --text:#C9D1D9;--text2:#8B949E;--text3:#58667A;
+  /* ── ZOHO SIDEBAR exact colors ── */
+  --zsb:#1B2340;        /* sidebar bg - exact Zoho dark navy */
+  --zsb2:#232C50;       /* hover bg */
+  --zsb3:#2B3660;       /* active bg */
+  --ztext:#8A90B0;      /* default text */
+  --ztext2:#D0D4EE;     /* hover/active text */
+  --ztext3:#4E567A;     /* muted */
+  --zborder:rgba(255,255,255,.06);
+  --zacc:#4A8FD4;       /* blue accent (active indicator) */
+  --sw:210px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;font-family:'Tajawal',sans-serif;background:#0D1117;color:var(--text);font-size:14px;overflow:hidden;}
-::-webkit-scrollbar{width:4px;height:4px;}
+html,body{height:100%;font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow:hidden;}
+::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
 input,select,textarea,button{font-family:'Tajawal',sans-serif;}
 textarea{resize:vertical;min-height:68px;}
-a{color:inherit;text-decoration:none;}
 
-/* ── LAYOUT ── */
+/* ════════════════════════════════
+   LAYOUT SHELL
+════════════════════════════════ */
 .app{display:flex;height:100vh;}
 
-/* ── ZOHO-STYLE SIDEBAR ── */
-/* ══ ZOHO-EXACT SIDEBAR ══ */
+/* ════════════════════════════════
+   ZOHO-EXACT SIDEBAR
+════════════════════════════════ */
 .sidebar{
-  width:var(--sw);background:#1C2135;
-  display:flex;flex-direction:column;flex-shrink:0;
-  overflow-y:auto;overflow-x:hidden;border-left:none;
+  width:var(--sw);
+  background:var(--zsb);
+  display:flex;flex-direction:column;
+  flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+  border-left:1px solid var(--zborder);
 }
-.sb-logo{
-  padding:14px 12px 12px;border-bottom:1px solid rgba(255,255,255,.08);
+
+/* ── Logo row ── */
+.zlogo{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 12px 11px;
+  border-bottom:1px solid var(--zborder);
+  cursor:default;
+}
+.zlogo-icon{
+  width:26px;height:26px;border-radius:6px;flex-shrink:0;
+  background:linear-gradient(135deg,#FF6B35,#E63000);
+  display:grid;place-items:center;
+  font-size:11px;font-weight:900;color:#fff;
+}
+.zlogo-name{font-size:13px;font-weight:700;color:var(--ztext2);letter-spacing:-.2px;}
+.zlogo-toggle{margin-right:auto;color:var(--ztext3);font-size:18px;cursor:pointer;line-height:1;}
+.zlogo-toggle:hover{color:var(--ztext);}
+
+/* ── Top flat items (Home/Reports/Analytics/MyRequests) ── */
+.ztop{padding:6px 6px 4px;}
+.zitem{
   display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:5px;
+  cursor:pointer;color:var(--ztext);
+  font-size:12.5px;font-weight:400;
+  transition:background .12s,color .12s;
+  position:relative;margin:0 4px 1px;
 }
-.sb-mark{
-  width:30px;height:30px;border-radius:7px;flex-shrink:0;
-  background:linear-gradient(135deg,#FF6B35,#FF3500);
-  display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;
+.zitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zitem.active::after{
+  content:'';position:absolute;right:-4px;top:5px;bottom:5px;
+  width:3px;background:var(--zacc);border-radius:0 0 0 3px;
 }
-.sb-company{font-size:12px;font-weight:700;color:#D4D9F0;}
-.sb-sub{font-size:9px;color:#6B74A0;margin-top:1px;}
-.sb-toggle{margin-right:auto;background:none;border:none;cursor:pointer;color:#6B74A0;display:grid;place-items:center;padding:3px;}
-.sb-toggle:hover{color:#9BA5D0;}
+.zicon{font-size:16px;flex-shrink:0;color:inherit;}
 
-/* Zoho top nav items */
-.zoho-top{padding:4px 6px;}
-.zt-item{
-  display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;
-  cursor:pointer;color:#8B95C2;font-size:13px;font-weight:500;transition:all .12s;margin-bottom:1px;
+/* ── Divider ── */
+.zdiv{height:1px;background:var(--zborder);margin:3px 0;}
+
+/* ── Teamspace header ── */
+.zteam{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 12px 6px;
 }
-.zt-item:hover{background:rgba(255,255,255,.07);color:#C8CEE8;}
-.zt-item.active{background:rgba(74,144,217,.18);color:#6EB3F7;}
-.zt-item .zt-icon{font-size:18px;color:inherit;}
-
-/* Divider */
-.sb-div{height:1px;background:rgba(255,255,255,.07);margin:4px 0;}
-
-/* Teamspace header */
-.ts-hdr{
-  display:flex;align-items:center;gap:8px;padding:10px 14px 6px;
-  cursor:pointer;
+.zteam-badge{
+  width:18px;height:18px;border-radius:4px;flex-shrink:0;
+  background:linear-gradient(135deg,#4A90D9,#6B4FD8);
+  display:grid;place-items:center;
+  font-size:8px;font-weight:800;color:#fff;letter-spacing:-.5px;
 }
-.ts-badge{
-  width:18px;height:18px;border-radius:4px;
-  background:linear-gradient(135deg,#5B8DD9,#7B5CE5);
-  display:grid;place-items:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;
+.zteam-name{font-size:12px;font-weight:600;color:var(--ztext);flex:1;}
+.zteam-arrow{font-size:16px;color:var(--ztext3);cursor:pointer;}
+
+/* ── Search inside sidebar ── */
+.zsearch{
+  margin:0 8px 6px;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:5px;padding:6px 9px;
 }
-.ts-name{font-size:12px;font-weight:700;color:#C0C8E8;flex:1;}
-.ts-arrow{font-size:14px;color:#6B74A0;transition:transform .2s;}
-.ts-arrow.open{transform:rotate(0);} 
-.ts-body{overflow:hidden;transition:max-height .25s ease;}
-
-/* Search in sidebar */
-.sb-search{
-  margin:4px 8px 8px;display:flex;align-items:center;gap:7px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  border-radius:7px;padding:7px 10px;
+.zsearch input{
+  background:none;border:none;outline:none;
+  font-size:12px;color:var(--ztext2);width:100%;
+  font-family:'Tajawal',sans-serif;
 }
-.sb-search input{background:none;border:none;outline:none;font-size:12px;color:#B0BAE0;width:100%;font-family:'Tajawal',sans-serif;}
-.sb-search input::placeholder{color:#4E5880;}
-.sb-search .mi{font-size:14px;color:#4E5880;}
+.zsearch input::placeholder{color:var(--ztext3);}
+.zsearch-icon{font-size:14px;color:var(--ztext3);}
 
-/* Workqueue */
-.sb-wq{
-  display:flex;align-items:center;gap:8px;padding:9px 12px;margin:0 6px 4px;
-  background:rgba(255,255,255,.05);border-radius:7px;cursor:pointer;
-  font-size:12px;font-weight:600;color:#A8B2D8;transition:background .15s;
+/* ── Workqueue ── */
+.zwq{
+  display:flex;align-items:center;gap:8px;
+  margin:0 6px 3px;padding:7px 10px;
+  border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12px;font-weight:500;
+  transition:background .12s;
 }
-.sb-wq:hover{background:rgba(255,255,255,.09);}
+.zwq:hover{background:var(--zsb2);color:var(--ztext2);}
+.zwq-icon{font-size:15px;color:var(--ztext);}
+.zwq-star{margin-right:auto;font-size:12px;}
 
-/* Group header inside teamspace */
-.grp-hdr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:8px 12px 4px;cursor:pointer;
+/* ── Section group ── */
+.zsec{padding:0 4px 2px;}
+.zsec-hdr{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px 4px;cursor:pointer;
 }
-.grp-hdr-left{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#7B84B0;}
-.grp-hdr .mi{font-size:14px;color:#4E5880;transition:transform .2s;}
-.grp-hdr.closed .mi{transform:rotate(-90deg);}
-.grp-body{overflow:hidden;transition:max-height .25s ease;}
+.zsec-hdr:hover .zsec-name{color:var(--ztext2);}
+.zsec-icon{font-size:15px;flex-shrink:0;}
+.zsec-name{font-size:11.5px;font-weight:700;color:var(--ztext);flex:1;transition:color .12s;text-transform:uppercase;letter-spacing:.3px;}
+.zsec-arr{font-size:14px;color:var(--ztext3);transition:transform .2s;flex-shrink:0;}
+.zsec-body{overflow:hidden;transition:max-height .22s ease;}
 
-/* Sub nav items (indented like Zoho) */
-.ns-item{
-  display:flex;align-items:center;gap:10px;padding:8px 10px 8px 18px;
-  cursor:pointer;color:#8B95C2;font-size:13px;font-weight:400;
-  transition:all .12s;position:relative;
+/* ── Sub items (inside sections) ── */
+.zsubitem{
+  display:flex;align-items:center;gap:0;
+  padding:7px 8px 7px 4px;margin:0 4px 1px;
+  border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12px;
+  transition:background .1s,color .1s;
+  position:relative;
 }
-.ns-item:hover{background:rgba(255,255,255,.06);color:#C8CEE8;}
-.ns-item.active{background:rgba(74,144,217,.15);color:#6EB3F7;font-weight:600;}
-.ns-item.active::before{content:'';position:absolute;right:0;top:6px;bottom:6px;width:3px;background:#4A90D9;border-radius:99px 0 0 99px;}
-.ns-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0;}
-.ns-item.active .ns-dot{opacity:1;}
-.ns-badge{margin-right:auto;background:rgba(255,255,255,.12);color:#A8B2D8;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;min-width:18px;text-align:center;}
-
-/* Extra bottom items */
-.sb-extras{padding:4px 6px;}
-.se-item{
-  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;
-  cursor:pointer;color:#8B95C2;font-size:13px;transition:all .12s;margin-bottom:1px;
+.zsubitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zsubitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zsubitem.active::after{
+  content:'';position:absolute;right:-4px;top:5px;bottom:5px;
+  width:3px;background:var(--zacc);border-radius:0 0 0 3px;
 }
-.se-item:hover{background:rgba(255,255,255,.07);color:#C8CEE8;}
+.zsub-ind{width:32px;display:flex;justify-content:center;flex-shrink:0;}
+.zsub-icon{font-size:14px;color:inherit;opacity:.8;}
+.zsub-lbl{flex:1;}
+.zbadge{
+  background:rgba(255,255,255,.1);color:var(--ztext2);
+  font-size:9px;font-weight:700;padding:0 5px;
+  border-radius:99px;min-width:16px;text-align:center;line-height:16px;
+}
+.zbadge.accent{background:rgba(255,107,53,.75);color:#fff;}
+.zbadge.blue{background:rgba(74,143,212,.7);color:#fff;}
+.zbadge.green{background:rgba(46,204,113,.7);color:#fff;}
 
-/* Footer user */
-.sb-foot{margin-top:auto;padding:8px;border-top:1px solid rgba(255,255,255,.07);}
-.user-card{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;}
-.user-card:hover{background:rgba(255,255,255,.07);}
-.u-av{width:30px;height:30px;border-radius:8px;background:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+/* ── Bottom standalone items ── */
+.zbot{padding:2px 6px;}
+.zbotitem{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:5px;cursor:pointer;
+  color:var(--ztext);font-size:12.5px;
+  transition:background .12s,color .12s;margin:0 4px 1px;
+}
+.zbotitem:hover{background:var(--zsb2);color:var(--ztext2);}
+.zbotitem.active{background:var(--zsb3);color:#7BB8F8;font-weight:600;}
+.zbot-icon{font-size:16px;flex-shrink:0;color:inherit;}
 
-/* ══ TOPBAR ══ */
-.topbar{height:49px;background:#161B22;border-bottom:1px solid #1E2A3A;display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;}
-.topbar-title{font-size:14px;font-weight:700;color:#C5CBE0;}
-.topbar-r{margin-right:auto;display:flex;gap:8px;align-items:center;}
-.sbox{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:6px 11px;}
-.sbox input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:150px;}
-.sbox .mi{font-size:15px;color:var(--text3);}
+/* ── Footer user ── */
+.sb-footer{margin-top:auto;padding:8px 6px;border-top:1px solid var(--zborder);}
+.user-card{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;}
+.user-card:hover{background:var(--zsb2);}
+.u-av{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
 
-/* ══ CONTENT + PAGES ══ */
-.content{flex:1;overflow-y:auto;padding:16px;background:#0D1117;}
+/* ════════════════════════════════
+   MAIN AREA
+════════════════════════════════ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Topbar ── */
+.topbar{
+  height:48px;background:var(--s1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;padding:0 16px;flex-shrink:0;
+}
+.topbar-title{font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;}
+.topbar-r{margin-right:auto;display:flex;gap:7px;align-items:center;}
+.sbox{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;}
+.sbox input{background:none;border:none;outline:none;font-size:12px;color:var(--text);width:145px;}
+.sbox .mi{font-size:14px;color:var(--text3);}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;padding:16px;}
 .page{display:none;}
 .page.active{display:block;}
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .13s;white-space:nowrap;}
-.btn-p{background:linear-gradient(135deg,var(--accent),#FF3500);color:#fff;box-shadow:0 3px 12px rgba(255,107,53,.3);}
-.btn-p:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(255,107,53,.4);}
-.btn-g{background:rgba(255,255,255,.07);color:var(--text);border:1px solid rgba(255,255,255,.12);}
-.btn-g:hover{background:rgba(255,255,255,.11);}
-.btn-d{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+/* ════════════════════════════════
+   BUTTONS
+════════════════════════════════ */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .13s;white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,#FF6B35,#E63000);color:#fff;box-shadow:0 3px 10px rgba(255,107,53,.3);}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(255,107,53,.4);}
+.btn-g{background:var(--s2);color:var(--text);border:1px solid var(--border);}
+.btn-g:hover{background:var(--s3);}
+.btn-d{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2);}
 .btn-sm{padding:5px 11px;font-size:12px;}
-.btn-xs{padding:3px 8px;font-size:11px;}
-.btn-icon{background:none;border:none;cursor:pointer;color:var(--text2);padding:5px;border-radius:7px;display:grid;place-items:center;transition:all .12s;}
-.btn-icon:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--text2);padding:5px;border-radius:6px;display:grid;place-items:center;transition:all .12s;}
+.btn-icon:hover{background:var(--s2);color:var(--text);}
 
-/* ── CARDS ── */
-.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;}
-.card-hdr{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+/* ════════════════════════════════
+   CARDS
+════════════════════════════════ */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.card-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .card-title{font-size:13px;font-weight:700;}
 .card-body{padding:14px;}
 
-/* ── STAT CARDS ── */
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
-.stat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
+/* ── Stat cards ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;}
 .stat-card::after{content:'';position:absolute;top:0;right:0;bottom:0;width:2px;background:var(--c,var(--accent));}
 .stat-lbl{font-size:10px;color:var(--text2);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
 .stat-val{font-size:22px;font-weight:900;font-family:'Cairo',sans-serif;}
 .stat-sub{font-size:10px;color:var(--text3);margin-top:2px;}
 
-/* ── TABLE ── */
+/* ════════════════════════════════
+   TABLE
+════════════════════════════════ */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-th{padding:9px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);white-space:nowrap;position:sticky;top:0;z-index:2;}
-td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;vertical-align:middle;}
+th{padding:9px 11px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2;}
+td{padding:9px 11px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
 tr:last-child td{border:none;}
-tbody tr:hover{background:rgba(255,255,255,.03);}
+tbody tr:hover{background:rgba(255,255,255,.018);}
 
-/* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
-.bs-new{background:rgba(61,142,255,.18);color:#6EB3FF;}
-.bs-not_contacted{background:rgba(168,85,247,.18);color:#C084FC;}
-.bs-contacted{background:rgba(34,197,94,.18);color:#4ADE80;}
-.bs-no_answer{background:rgba(245,158,11,.22);color:#FCD34D;}
-.bs-not_interested{background:rgba(239,68,68,.18);color:#F87171;}
-.bs-interested{background:rgba(255,107,53,.18);color:#FB923C;}
-.bs-converted{background:rgba(34,197,94,.22);color:#4ADE80;}
-.bs-duplicate{background:rgba(168,85,247,.22);color:#C084FC;}
-.bs-assign{background:rgba(61,142,255,.18);color:#6EB3FF;}
-.bs-workin{background:rgba(34,197,94,.18);color:#4ADE80;}
-.bs-pending{background:rgba(245,158,11,.18);color:#FCD34D;}
-.bs-followup{background:rgba(168,85,247,.18);color:#C084FC;}
-.bs-new_deal{background:rgba(61,142,255,.18);color:#6EB3FF;}
-.bs-hot{background:rgba(255,107,53,.18);color:#FB923C;}
-.bs-won{background:rgba(34,197,94,.18);color:#4ADE80;}
-.bs-lost{background:rgba(239,68,68,.18);color:#F87171;}
-.bs-pending_deal{background:rgba(245,158,11,.18);color:#FCD34D;}
-.bs-high{background:rgba(239,68,68,.18);color:#F87171;}
-.bs-medium{background:rgba(245,158,11,.18);color:#FCD34D;}
-.bs-low{background:rgba(34,197,94,.18);color:#4ADE80;}
+/* ════════════════════════════════
+   BADGES — Lead Status
+════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
+/* lead statuses */
+.bs-new{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-not_contacted{background:rgba(155,89,182,.15);color:#C39BD3;}
+.bs-contacted{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-no_answer{background:rgba(245,166,35,.18);color:#F5A623;}
+.bs-not_interested{background:rgba(231,76,60,.15);color:#E74C3C;}
+.bs-interested{background:rgba(255,107,53,.15);color:#FF8C5A;}
+.bs-converted{background:rgba(46,204,113,.2);color:#2ECC71;font-weight:800;}
+.bs-duplicate{background:rgba(155,89,182,.2);color:#BB8FCE;}
+/* stages */
+.bs-assign{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-workin{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-pending{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-followup{background:rgba(155,89,182,.15);color:#C39BD3;}
+/* deals */
+.bs-new_deal{background:rgba(74,144,217,.15);color:#6EB4F7;}
+.bs-hot{background:rgba(255,107,53,.15);color:#FF8C5A;}
+.bs-pending_deal{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-won{background:rgba(46,204,113,.15);color:#58D68D;}
+.bs-lost{background:rgba(231,76,60,.15);color:#E74C3C;}
+/* priority */
+.bs-high{background:rgba(231,76,60,.15);color:#E74C3C;}
+.bs-medium{background:rgba(245,166,35,.15);color:#F5A623;}
+.bs-low{background:rgba(46,204,113,.15);color:#58D68D;}
 
-/* ── MODAL ── */
-.mo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px);}
+/* ════════════════════════════════
+   MODAL
+════════════════════════════════ */
+.mo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px);}
 .mo-overlay.open{opacity:1;pointer-events:all;}
-.modal{background:#1C2135;border:1px solid rgba(255,255,255,.12);border-radius:16px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.8);}
-.mo-hdr{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:14px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.7);}
+.mo-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .mo-title{font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;}
-.mo-body{padding:18px;display:flex;flex-direction:column;gap:12px;}
-.mo-foot{padding:12px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;justify-content:flex-end;}
+.mo-body{padding:16px;display:flex;flex-direction:column;gap:11px;}
+.mo-foot{padding:11px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
 
 /* FORM */
-.field{display:flex;flex-direction:column;gap:5px;flex:1;}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;}
 .frow{display:flex;gap:10px;}
 .flabel{font-size:11px;font-weight:700;color:var(--text2);}
-input,select,textarea{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color .15s;}
+input,select,textarea{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color .15s;}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 
-/* ── FILTER SIDEBAR ── */
-.fsidebar{width:196px;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;overflow-y:auto;max-height:calc(100vh - 140px);}
-.fg-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:11px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.07);}
+/* ════════════════════════════════
+   FILTER SIDEBAR
+════════════════════════════════ */
+.fsidebar{width:190px;flex-shrink:0;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:11px;overflow-y:auto;max-height:calc(100vh-135px);}
+.fg-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:10px 0 5px;padding-bottom:4px;border-bottom:1px solid var(--border);}
 .fg-title:first-child{margin-top:0;}
-.fc-item{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12px;color:var(--text2);cursor:pointer;}
+.fc-item{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:var(--text2);cursor:pointer;}
 .fc-item:hover{color:var(--text);}
-.fc-item input{width:13px;height:13px;flex-shrink:0;margin:0;accent-color:var(--accent);}
-.sinput{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;margin-bottom:10px;}
+.fc-item input[type=checkbox],.fc-item input[type=radio]{width:13px;height:13px;flex-shrink:0;margin:0;accent-color:var(--accent);}
+.sinput{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:6px 9px;margin-bottom:9px;}
 .sinput input{background:none;border:none;padding:0;font-size:12px;}
-.sinput .mi{font-size:14px;color:var(--text3);}
+.sinput .mi{font-size:13px;color:var(--text3);}
 
-/* ── KANBAN ── */
-.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;align-items:flex-start;}
-.k-col{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;min-width:210px;flex-shrink:0;}
-.k-hdr{padding:11px 13px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;}
+/* ════════════════════════════════
+   KANBAN
+════════════════════════════════ */
+.kanban{display:flex;gap:11px;overflow-x:auto;padding-bottom:8px;align-items:flex-start;}
+.k-col{background:var(--s2);border:1px solid var(--border);border-radius:10px;min-width:205px;flex-shrink:0;}
+.k-hdr{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .k-title{font-size:12px;font-weight:700;}
-.k-cnt{font-size:10px;background:rgba(255,255,255,.1);padding:1px 7px;border-radius:99px;}
-.k-body{padding:9px;display:flex;flex-direction:column;gap:7px;min-height:60px;}
-.k-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:11px;cursor:pointer;transition:border-color .15s;}
+.k-cnt{font-size:10px;background:var(--s3);padding:1px 6px;border-radius:99px;}
+.k-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:50px;}
+.k-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .15s;}
 .k-card:hover{border-color:var(--accent);}
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;background:rgba(255,255,255,.06);padding:3px;border-radius:9px;width:fit-content;}
-.tab-btn{padding:5px 13px;border-radius:7px;border:none;background:none;color:var(--text2);font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;}
-.tab-btn.active{background:rgba(255,255,255,.1);color:var(--text);font-weight:700;}
+/* ════════════════════════════════
+   TABS
+════════════════════════════════ */
+.tabs{display:flex;gap:2px;background:var(--s2);padding:3px;border-radius:8px;width:fit-content;}
+.tab-btn{padding:5px 12px;border-radius:6px;border:none;background:none;color:var(--text2);font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;}
+.tab-btn.active{background:var(--s1);color:var(--text);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 
-/* ── PROGRESS BARS ── */
-.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
-.prog-lbl{font-size:11px;min-width:95px;text-align:right;color:var(--text2);}
-.prog-bg{flex:1;background:rgba(255,255,255,.08);border-radius:99px;height:6px;overflow:hidden;}
-.prog-fill{height:100%;border-radius:99px;transition:width .6s ease;}
-.prog-num{font-size:11px;color:var(--text3);min-width:28px;}
+/* ════════════════════════════════
+   PROGRESS BAR
+════════════════════════════════ */
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.prog-lbl{font-size:11px;min-width:90px;text-align:right;color:var(--text2);}
+.prog-bg{flex:1;background:var(--s3);border-radius:99px;height:5px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.prog-num{font-size:11px;color:var(--text3);min-width:26px;}
 
-/* ── BAR CHART ── */
+/* BAR CHART */
 .bar-chart{display:flex;align-items:flex-end;gap:4px;height:80px;}
 .bc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.bc-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;}
+.bc-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;}
 .bc-lbl{font-size:9px;color:var(--text3);}
 .bc-val{font-size:9px;color:var(--text2);}
 
-/* ── EMP CARDS ── */
-.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
-.emp-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;}
-.emp-av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:10px;}
-.emp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;}
+/* ════════════════════════════════
+   EMPLOYEE CARDS
+════════════════════════════════ */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px;}
+.emp-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.emp-av{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-size:16px;font-weight:700;color:#fff;margin-bottom:9px;}
+.emp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
 .emp-row:last-child{border:none;}
 
-/* ── OFFER OVERLAY ── */
-.offer-ov{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);flex-direction:column;}
-.offer-ov.open{display:flex;}
-.offer-topbar{height:52px;background:#111828;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;}
-.offer-content{flex:1;overflow-y:auto;}
-
-/* ── NOTIF PANEL ── */
-.notif-panel{display:none;position:fixed;left:18px;top:60px;width:305px;background:#1C2135;border:1px solid rgba(255,255,255,.12);border-radius:14px;z-index:600;box-shadow:0 20px 60px rgba(0,0,0,.8);}
-.notif-panel.open{display:block;}
-
-/* ── TOAST ── */
-.toast-wrap{position:fixed;bottom:18px;left:18px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
-.toast{background:#1C2135;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 12px 40px rgba(0,0,0,.6);animation:tIn .25s ease,tOut .3s 2.7s forwards;}
-@keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes tOut{to{opacity:0}}
-
-/* EMPTY */
-.empty{padding:36px;text-align:center;color:var(--text3);}
-.empty .mi{font-size:38px;display:block;margin-bottom:8px;opacity:.3;}
-
-/* DASH GRID */
-.dash-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-
-/* DROP ZONE */
-.drop-zone{border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:30px;cursor:pointer;transition:all .2s;text-align:center;}
+/* ════════════════════════════════
+   MISC
+════════════════════════════════ */
+.dash-2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+.drop-zone{border:2px dashed var(--border2);border-radius:10px;padding:28px;cursor:pointer;transition:all .2s;text-align:center;}
 .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(255,107,53,.04);}
-
-/* FILTER SELECT */
-.fsel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;cursor:pointer;width:auto;}
-
-/* INFO ROW */
-.irow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;}
+.fsel{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--text);font-size:12px;outline:none;cursor:pointer;}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
 .irow:last-child{border:none;}
 .ikey{color:var(--text2);}
+.empty{padding:36px;text-align:center;color:var(--text3);}
+.empty .mi{font-size:36px;display:block;margin-bottom:8px;opacity:.3;}
 
+/* ════════════════════════════════
+   OFFER OVERLAY
+════════════════════════════════ */
+.offer-ov{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);flex-direction:column;}
+.offer-ov.open{display:flex;}
+.offer-topbar{height:48px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;}
+.offer-content{flex:1;overflow-y:auto;}
+
+/* ════════════════════════════════
+   NOTIFICATIONS
+════════════════════════════════ */
+.notif-panel{display:none;position:fixed;left:18px;top:58px;width:298px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;z-index:600;box-shadow:0 16px 50px rgba(0,0,0,.6);}
+.notif-panel.open{display:block;}
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+.toast-wrap{position:fixed;bottom:16px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.toast{background:var(--s1);border:1px solid var(--border2);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 10px 36px rgba(0,0,0,.5);animation:tIn .22s ease,tOut .28s 2.7s forwards;}
+@keyframes tIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0}}
+
+@media(max-width:1200px){.stats-row{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}.dash-2{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- ══ SIDEBAR (Zoho-style) ══ -->
+<!-- ════════════════════════════════
+     ZOHO-STYLE SIDEBAR
+════════════════════════════════ -->
 <div class="sidebar">
 
   <!-- Logo -->
-  <div class="sb-logo">
-    <div class="sb-mark">BW</div>
-    <div style="flex:1;">
-      <div class="sb-company" id="sb-company">بوابات العالم</div>
-    </div>
-    <span class="material-icons-round sb-menu-toggle">menu_open</span>
+  <div class="zlogo">
+    <div class="zlogo-icon" style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#FF6B35,#D63000);display:grid;place-items:center;font-size:9px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 2px 6px rgba(255,107,53,.4);">CRM</div>
+    <span class="zlogo-name" id="sb-company" style="font-size:13px;font-weight:700;color:var(--ztext2);">نظام إدارة العملاء</span>
+    <span class="material-icons-round zlogo-toggle" style="font-size:17px;">table_rows</span>
   </div>
 
-  <!-- Top-level nav: Home, Reports, Analytics, My Requests -->
-  <div class="nav-top-section">
-    <div class="nav-top-item active" id="nav-dashboard" onclick="navigate('dashboard')">
-      <span class="material-icons-round nav-top-icon">home</span>
+  <!-- Top flat nav: Home, Reports, Analytics, My Requests -->
+  <div class="ztop">
+    <div class="zitem active" id="nav-dashboard" onclick="navigate('dashboard')">
+      <span class="material-icons-round zicon" style="color:#9BA8C8;">home</span>
       <span>الرئيسية</span>
     </div>
-    <div class="nav-top-item" id="nav-reports" onclick="navigate('reports')">
-      <span class="material-icons-round nav-top-icon" style="color:#E05C5C;">bar_chart</span>
+    <div class="zitem" id="nav-reports" onclick="navigate('reports')">
+      <span class="material-icons-round zicon" style="color:#E85C5C;">insert_chart</span>
       <span>التقارير</span>
     </div>
-    <div class="nav-top-item" id="nav-excel" onclick="navigate('excel')">
-      <span class="material-icons-round nav-top-icon" style="color:#3ABFA3;">analytics</span>
+    <div class="zitem" id="nav-excel" onclick="navigate('excel')">
+      <span class="material-icons-round zicon" style="color:#3ABFA3;">ssid_chart</span>
       <span>التحليلات</span>
     </div>
-    <div class="nav-top-item" onclick="navigate('employees')">
-      <span class="material-icons-round nav-top-icon" style="color:#5BA3F5;">pending_actions</span>
+    <div class="zitem" onclick="navigate('employees')">
+      <span class="material-icons-round zicon" style="color:#8B9DE8;">manage_accounts</span>
       <span>طلباتي</span>
     </div>
   </div>
 
-  <div class="sb-divider"></div>
+  <div class="zdiv"></div>
 
   <!-- CRM Teamspace -->
-  <div class="teamspace-hdr">
-    <div class="ts-badge">CT</div>
-    <span class="ts-name">CRM Teamspace</span>
-    <span class="material-icons-round ts-arrow">arrow_drop_down</span>
+  <div class="zteam">
+    <div class="zteam-badge" style="width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#4A90D9,#6B4FD8);display:grid;place-items:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;">CRM</div>
+    <span class="zteam-name" style="font-size:12px;font-weight:600;color:var(--ztext2);">نظام إدارة العملاء</span>
+    <span class="material-icons-round zteam-arrow" style="font-size:16px;color:var(--ztext3);">expand_more</span>
   </div>
 
   <!-- Search -->
-  <div class="sb-searchbox">
-    <span class="material-icons-round sb-si">search</span>
+  <div class="zsearch">
+    <span class="material-icons-round zsearch-icon">search</span>
     <input type="text" placeholder="بحث..." oninput="globalSearch(this.value)">
   </div>
 
   <!-- Workqueue -->
-  <div class="sb-workqueue">
-    <span class="material-icons-round" style="font-size:15px;color:#8B96A8;">inbox</span>
+  <div class="zwq">
+    <span class="material-icons-round zwq-icon">inbox</span>
     <span>قائمة الانتظار</span>
-    <span class="sb-wq-star">✨</span>
+    <span class="zwq-star">✨</span>
   </div>
 
-  <!-- Sales Section -->
-  <div class="sb-section">
-    <div class="sb-section-hdr" onclick="toggleSbSection(this)">
-      <span class="material-icons-round sb-section-icon" style="color:#5BA3F5;">business_center</span>
-      <span class="sb-section-name">المبيعات</span>
-      <span class="material-icons-round sb-section-arrow open">expand_more</span>
+  <!-- ── Sales Section ── -->
+  <div class="zsec">
+    <div class="zsec-hdr" onclick="toggleSec(this)">
+      <span class="material-icons-round zsec-icon" style="color:#6B9DE8;">business_center</span>
+      <span class="zsec-name">المبيعات</span>
+      <span class="material-icons-round zsec-arr">expand_more</span>
     </div>
-    <div class="sb-section-body">
-      <div class="nav-sub-item active" id="nav-leads" onclick="navigate('leads')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">person_search</span></span>
-        <span>اللـيدات</span>
-        <span class="ns-badge" id="badge-leads">0</span>
+    <div class="zsec-body" style="max-height:300px;">
+      <div class="zsubitem active" id="nav-leads" onclick="navigate('leads')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">person_search</span></span>
+        <span class="zsub-lbl">اللـيدات</span>
+        <span class="zbadge accent" id="badge-leads">0</span>
       </div>
-      <div class="nav-sub-item" id="nav-clients" onclick="navigate('clients')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">contacts</span></span>
-        <span>جهات الاتصال</span>
-        <span class="ns-badge" id="badge-clients">0</span>
+      <div class="zsubitem" id="nav-clients" onclick="navigate('clients')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">contacts</span></span>
+        <span class="zsub-lbl">جهات الاتصال</span>
+        <span class="zbadge blue" id="badge-clients">0</span>
       </div>
-      <div class="nav-sub-item" id="nav-employees" onclick="navigate('employees')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">corporate_fare</span></span>
-        <span>الحسابات</span>
+      <div class="zsubitem" id="nav-employees" onclick="navigate('employees')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">corporate_fare</span></span>
+        <span class="zsub-lbl">الحسابات</span>
       </div>
-      <div class="nav-sub-item" id="nav-deals" onclick="navigate('deals')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">handshake</span></span>
-        <span>الصفقات</span>
-        <span class="ns-badge" id="badge-deals">0</span>
+      <div class="zsubitem" id="nav-deals" onclick="navigate('deals')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">handshake</span></span>
+        <span class="zsub-lbl">الصفقات</span>
+        <span class="zbadge" id="badge-deals">0</span>
       </div>
-      <div class="nav-sub-item" onclick="openOfferPage()">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">description</span></span>
-        <span>المستندات</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Activities Section -->
-  <div class="sb-section">
-    <div class="sb-section-hdr" onclick="toggleSbSection(this)">
-      <span class="material-icons-round sb-section-icon" style="color:#E09040;">event_note</span>
-      <span class="sb-section-name">النشاطات</span>
-      <span class="material-icons-round sb-section-arrow open">expand_more</span>
-    </div>
-    <div class="sb-section-body">
-      <div class="nav-sub-item" id="nav-tasks" onclick="navigate('tasks')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">task_alt</span></span>
-        <span>المهام</span>
-        <span class="ns-badge green" id="badge-tasks">0</span>
-      </div>
-      <div class="nav-sub-item" id="nav-pipeline" onclick="navigate('pipeline')">
-        <span class="ns-indent"><span class="material-icons-round ns-icon">view_week</span></span>
-        <span>خط الأنابيب</span>
+      <div class="zsubitem" onclick="openOfferPage()">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon">description</span></span>
+        <span class="zsub-lbl">المستندات</span>
       </div>
     </div>
   </div>
 
-  <div class="sb-divider"></div>
+  <!-- ── Activities Section ── -->
+  <div class="zsec">
+    <div class="zsec-hdr" onclick="toggleSec(this)">
+      <span class="material-icons-round zsec-icon" style="color:#E09040;">event_note</span>
+      <span class="zsec-name">النشاطات</span>
+      <span class="material-icons-round zsec-arr">expand_more</span>
+    </div>
+    <div class="zsec-body" style="max-height:220px;">
+      <div class="zsubitem" id="nav-tasks" onclick="navigate('tasks')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#58C97A;">check_box</span></span>
+        <span class="zsub-lbl">المهام</span>
+        <span class="zbadge green" id="badge-tasks">0</span>
+      </div>
+      <div class="zsubitem" onclick="navigate('pipeline')">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#6B9DE8;">groups</span></span>
+        <span class="zsub-lbl">الاجتماعات</span>
+      </div>
+      <div class="zsubitem">
+        <span class="zsub-ind"><span class="material-icons-round zsub-icon" style="color:#3ABFA3;">phone_in_talk</span></span>
+        <span class="zsub-lbl">المكالمات</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="zdiv"></div>
 
   <!-- Bottom items -->
-  <div class="sb-bottom-section">
-    <div class="sb-bottom-item">
-      <span class="material-icons-round sb-bottom-icon" style="color:#5BA3F5;">hub</span>
+  <div class="zbot">
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#6B9DE8;">hub</span>
       <span>التكاملات</span>
     </div>
-    <div class="sb-bottom-item">
-      <span class="material-icons-round sb-bottom-icon" style="color:#E09040;">trending_up</span>
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#E09040;">trending_up</span>
       <span>التوقعات</span>
     </div>
-    <div class="sb-bottom-item">
-      <span class="material-icons-round sb-bottom-icon" style="color:#8B96A8;">mark_email_read</span>
+    <div class="zbotitem">
+      <span class="material-icons-round zbot-icon" style="color:#8B96A8;">mark_email_read</span>
       <span>صندوق المبيعات</span>
     </div>
-    <div class="sb-bottom-item" id="nav-settings" onclick="navigate('settings')">
-      <span class="material-icons-round sb-bottom-icon" style="color:#8B96A8;">work_history</span>
+    <div class="zbotitem" id="nav-settings" onclick="navigate('settings')">
+      <span class="material-icons-round zbot-icon" style="color:#8B96A8;">work_history</span>
       <span>وظائفي</span>
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- User footer -->
   <div class="sb-footer">
-    <div class="user-card">
+    <div class="user-card" onclick="toggleUserMenu()" style="position:relative;">
       <div class="u-av" id="u-av">م</div>
       <div style="flex:1;">
-        <div style="font-size:12px;font-weight:600;color:#C5CBE0;" id="u-name">مدير النظام</div>
-        <div style="font-size:10px;color:#5A6478;">مشرف النظام</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ztext2);" id="u-name">المدير</div>
+        <div style="font-size:10px;color:var(--accent);" id="u-role-lbl">مدير</div>
+      </div>
+      <span class="material-icons-round" style="font-size:16px;color:var(--ztext3);">more_vert</span>
+    </div>
+    <div id="user-menu" style="display:none;background:var(--zsb2);border:1px solid var(--zborder);border-radius:8px;margin:4px 4px 0;overflow:hidden;">
+      <div onclick="navigate('settings')" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;color:var(--ztext2);" onmouseover="this.style.background='var(--zsb3)'" onmouseout="this.style.background=''">
+        <span class="material-icons-round" style="font-size:15px;color:var(--blue);">manage_accounts</span> إدارة الحساب
+      </div>
+      <div onclick="logout()" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;color:var(--red);border-top:1px solid var(--zborder);" onmouseover="this.style.background='var(--zsb3)'" onmouseout="this.style.background=''">
+        <span class="material-icons-round" style="font-size:15px;">logout</span> تسجيل الخروج
       </div>
     </div>
   </div>
 
-</div>
+</div><!-- /sidebar -->
 
-<!-- ═══════════ MAIN ═══════════ -->
-<div class="main" style="background:#0D1117;">
+<!-- ════════════════════════════════
+     MAIN
+════════════════════════════════ -->
+<div class="main">
 
-  <!-- TOPBAR -->
+  <!-- Topbar -->
   <div class="topbar">
     <span class="topbar-title" id="topbar-title">لوحة التحكم</span>
     <div class="topbar-r">
@@ -475,18 +575,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
         <span id="notif-dot" style="display:none;position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid var(--s1);"></span>
       </button>
       <button class="btn btn-p btn-sm" id="add-btn" onclick="openAddModal()">
-        <span class="material-icons-round" style="font-size:15px;">add</span><span id="add-lbl">إضافة</span>
+        <span class="material-icons-round" style="font-size:14px;">add</span>
+        <span id="add-lbl">إضافة</span>
       </button>
-      <button class="btn btn-g btn-sm" onclick="exportPage()" title="تصدير">
-        <span class="material-icons-round" style="font-size:15px;">download</span>
+      <button class="btn btn-g btn-sm" onclick="exportPage()">
+        <span class="material-icons-round" style="font-size:14px;">download</span>
+      </button>
+      <button class="btn btn-g btn-sm" id="logout-topbar" onclick="logout()" title="تسجيل الخروج" style="color:var(--red);">
+        <span class="material-icons-round" style="font-size:14px;">logout</span>
       </button>
     </div>
   </div>
 
-  <!-- PAGES -->
+  <!-- Pages -->
   <div class="content" id="content">
-
-    <!-- ── DASHBOARD ── -->
+<!-- ── DASHBOARD ── -->
     <div class="page active" id="page-dashboard">
       <div class="stats-row" id="dash-stats"></div>
       <div class="dash-2">
@@ -578,9 +681,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
                 <option value="date_asc">الأقدم أولاً</option>
                 <option value="name">الاسم</option>
               </select>
-              <button class="btn btn-g btn-sm" onclick="exportLeads()">
-                <span class="material-icons-round" style="font-size:14px;">download</span> Excel
-              </button>
+              ${can('exportLeads')?`<button class="btn btn-g btn-sm" onclick="exportLeads()"><span class="material-icons-round" style="font-size:14px;">download</span> Excel</button>`:''}
             </div>
           </div>
           <div class="card">
@@ -590,7 +691,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
                   <th style="width:36px;"><input type="checkbox"></th>
                   <th>الاسم</th><th>الجوال</th><th>وقت الإضافة</th>
                   <th>حالة الليد</th><th>مصدر الليد</th><th>الوجهة</th>
-                  <th>الموظف</th><th>المرحلة</th><th>ملاحظة</th><th>الإجراءات</th>
+                  <th>الموظف</th><th>المرحلة</th><th>🔇 No Answer</th><th>ملاحظة</th><th>الإجراءات</th>
                 </tr></thead>
                 <tbody id="leads-tbody"></tbody>
               </table>
@@ -806,12 +907,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
         <div class="card">
           <div class="card-hdr"><span class="card-title">إعدادات الشركة</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="field"><label class="flabel">اسم الشركة</label><input id="s-company" value="بوابات العالم"></div>
+            <div class="field"><label class="flabel">اسم الشركة</label><input id="s-company" value="نظام إدارة العملاء"></div>
             <div class="frow">
               <div class="field"><label class="flabel">العملة</label>
                 <select id="s-currency"><option value="ريال">ريال سعودي</option><option value="$">دولار</option><option value="€">يورو</option></select>
               </div>
-              <div class="field"><label class="flabel">اسم المسؤول</label><input id="s-manager" value="مدير النظام"></div>
+              <div class="field"><label class="flabel">اسم المسؤول</label><input id="s-manager" value=""></div>
             </div>
             <div class="field"><label class="flabel">لون التمييز</label>
               <div style="display:flex;gap:8px;margin-top:4px;" id="color-swatches">
@@ -851,10 +952,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     </div>
 
   </div><!-- /content -->
+  </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- OFFER OVERLAY (full screen) -->
+<!-- OFFER OVERLAY -->
 <div class="offer-ov" id="offer-overlay">
   <div class="offer-topbar">
     <button class="btn-icon" onclick="closeOfferPage()">
@@ -862,19 +964,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
     </button>
     <span style="font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;">مولد العروض السياحية</span>
     <a href="tourism_offer_generator.html" target="_blank" class="btn btn-g btn-sm" style="margin-right:auto;">
-      <span class="material-icons-round" style="font-size:14px;">open_in_new</span> فتح مستقل
+      <span class="material-icons-round" style="font-size:13px;">open_in_new</span> فتح مستقل
     </a>
   </div>
   <div class="offer-content" id="offer-content"></div>
 </div>
 
-<!-- NOTIFICATION PANEL -->
+<!-- NOTIF PANEL -->
 <div class="notif-panel" id="notif-panel">
-  <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+  <div style="padding:11px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
     <span style="font-size:13px;font-weight:700;">التنبيهات</span>
     <button class="btn btn-g btn-sm" onclick="clearNotifs()">مسح الكل</button>
   </div>
-  <div id="notif-list" style="max-height:320px;overflow-y:auto;"></div>
+  <div id="notif-list" style="max-height:300px;overflow-y:auto;"></div>
 </div>
 
 <!-- MODAL -->
@@ -892,9 +994,64 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);}
   </div>
 </div>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:9000;background:#0D1117;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:380px;max-width:95vw;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FF6B35,#D63000);display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,107,53,.4);">CRM</div>
+      <div style="font-size:20px;font-weight:900;font-family:'Cairo',sans-serif;" id="login-company">نظام إدارة العملاء</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px;">مرحباً بك</div>
+    </div>
+
+    <!-- اختيار الموظف -->
+    <div id="login-step1">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);">اختر المستخدم</div>
+      <div id="login-emp-list" style="display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- إدخال الـ PIN -->
+    <div id="login-step2" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <button onclick="backToStep1()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);">
+          <span class="material-icons-round" style="font-size:16px;vertical-align:middle;">arrow_back</span>
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div id="pin-emp-av" style="width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;"></div>
+          <div>
+            <div id="pin-emp-name" style="font-size:14px;font-weight:700;"></div>
+            <div id="pin-emp-role" style="font-size:11px;color:var(--text3);"></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2);">أدخل رمز PIN</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="password" id="pin-input" maxlength="6" placeholder="● ● ● ●"
+          style="font-size:20px;letter-spacing:8px;text-align:center;padding:12px;"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="pin-error" style="color:var(--red);font-size:12px;text-align:center;min-height:18px;margin-bottom:8px;"></div>
+      <!-- numpad -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;" id="numpad"></div>
+      <button class="btn btn-p" style="width:100%;padding:11px;" onclick="doLogin()">
+        <span class="material-icons-round" style="font-size:16px;">login</span> دخول
+      </button>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-top:16px;">© نظام إدارة العملاء</div>
+</div>
+
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
+
+function toggleSec(hdr){
+  const body=hdr.nextElementSibling;
+  const arr=hdr.querySelector('.zsec-arr');
+  const isOpen=body.style.maxHeight!=='0px'&&body.style.maxHeight!=='';
+  body.style.maxHeight=isOpen?'0px':body.scrollHeight+50+'px';
+  if(arr) arr.style.transform=isOpen?'rotate(-90deg)':'rotate(0deg)';
+}
+
 // ══════════════════════════════════════════
 // STORAGE & HELPERS
 // ══════════════════════════════════════════
@@ -914,8 +1071,10 @@ const gv=id=>document.getElementById(id)?.value||'';
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
-let settings  = DB.get('settings')  || {company:'بوابات العالم',currency:'ريال',accent:'#FF6B35',manager:'مدير النظام'};
-let employees = DB.get('employees') || ['محمد فتحي','سلمى أحمد','نيرة','محمد عصام','أحمد رفعت'];
+let settings  = DB.get('settings')  || {company:'نظام إدارة العملاء',currency:'ريال',accent:'#FF6B35',manager:'المدير'};
+let employees = DB.get('employees') || [];
+// currentUser: الموظف المسجل دخول حالياً
+let currentUser = DB.get('currentUser') || null;
 let leads     = DB.get('leads')     || [];
 let clients   = DB.get('clients')   || [];
 let deals     = DB.get('deals')     || [];
@@ -935,28 +1094,67 @@ const STGC={assign:'bs-assign',workin:'bs-workin',pending:'bs-pending',followup:
 const PL={high:'عالية',medium:'متوسطة',low:'منخفضة'};
 const DL={new_deal:'جديدة',hot:'ساخنة',pending_deal:'معلقة',won:'مكتملة',lost:'خسرناها'};
 const EC=['#FF6B35','#3D8EFF','#22C55E','#A855F7','#F59E0B','#06B6D4','#EF4444','#EC4899'];
+const ROLES={admin:'مدير',sales:'موظف مبيعات',viewer:'عارض فقط'};
+const empName=e=>typeof e==='string'?e:(e?.name||'—');
+const empNames=()=>employees.map(e=>e.name||e);
+const ROLE_COLOR={admin:'var(--accent)',sales:'var(--blue)',viewer:'var(--text3)'};
+const PERM_LABELS={
+  dashboard:'لوحة التحكم',leads:'الليدات',clients:'العملاء',deals:'الصفقات',
+  pipeline:'خط الأنابيب',tasks:'المهام',employees:'الموظفون',reports:'التقارير',
+  excel:'تحليل Excel',settings:'الإعدادات',
+  addLead:'إضافة ليدات',editLead:'تعديل ليدات',deleteLead:'حذف ليدات',exportLeads:'تصدير Excel',
+  addDeal:'إضافة صفقات',deleteDeal:'حذف صفقات',addClient:'إضافة عملاء',deleteClient:'حذف عملاء'
+};
+
+// helper: هل المستخدم الحالي لديه صلاحية معينة؟
+function can(perm){
+  if(!currentUser)return false;
+  const u=employees.find(e=>e.id===currentUser);
+  if(!u)return false;
+  return !!u.perms[perm];
+}
+// helper: إخفاء/إظهار عناصر حسب الصلاحية
+function applyPermUI(){
+  if(!currentUser)return;
+  const u=employees.find(e=>e.id===currentUser);if(!u)return;
+  // sidebar nav items
+  ['dashboard','leads','clients','deals','pipeline','tasks','employees','reports','excel','settings'].forEach(p=>{
+    const el=document.getElementById('nav-'+p);
+    if(el)el.style.display=u.perms[p]?'':'none';
+  });
+  // add button
+  const addBtn=document.getElementById('add-btn');
+  const page=currentPage;
+  let showAdd=false;
+  if(page==='leads')showAdd=can('addLead');
+  else if(page==='clients')showAdd=can('addClient');
+  else if(page==='deals'||page==='pipeline')showAdd=can('addDeal');
+  else if(page==='tasks')showAdd=true;
+  if(addBtn)addBtn.style.display=showAdd?'':'none';
+}
 
 // ══════════════════════════════════════════
 // SEED DATA
 // ══════════════════════════════════════════
-if(!leads.length && !clients.length) seedDemo();
+// seedDemo called only when first user is set up
 
 function seedDemo(){
+  if(!employees.length)return; // لا نبذر بيانات إذا لا يوجد موظفون
   const SRCS=['snap_messages','snapchat_form','tiktok_ads','instagram','whatsapp','referral'];
   const STATS=['new','not_contacted','no_answer','not_interested','interested','contacted'];
   const STGS=['assign','workin','pending','followup'];
   const DESTS=['تركيا','جورجيا','أوروبا','إندونيسيا','ماليزيا','دبي','المالديف','أذربيجان'];
-  const NAMES=['عبدالله المطيري','فاطمة السالم','خالد العتيبي','نور الرشيد','سعد الدوسري','منى القحطاني','يوسف الشمري','ريم العمري','أنس الغامدي','هند الزهراني','تركي المالكي','لمياء الحربي','بندر الشهري','عهود الدوسري','فيصل العنزي','وفاء المطيري','أحمد الحمدان','سارة البراك'];
+  const NAMES=['عميل 1','عميل 2','عميل 3','عميل 4','عميل 5','عميل 6','عميل 7','عميل 8','عميل 9','عميل 10','عميل 11','عميل 12','عميل 13','عميل 14','عميل 15','عميل 16','عميل 17','عميل 18'];
   leads=Array.from({length:24},(_,i)=>{
     const created=Date.now()-Math.random()*30*864e5;
     const stg=STGS[Math.floor(Math.random()*STGS.length)];
-    const emp=employees[Math.floor(Math.random()*employees.length)];
+    const empObj=employees[Math.floor(Math.random()*employees.length)];const emp=empObj.name||empObj;
     const base=created+Math.random()*3600000;
     return{id:uid(),name:NAMES[i%NAMES.length],phone:'05'+(10000000+Math.floor(Math.random()*89999999)),source:SRCS[i%SRCS.length],status:STATS[i%STATS.length],dest:DESTS[i%DESTS.length],employee:emp,note:'',created,stage:stg,assign_t:base,workin_t:stg!=='assign'?base+Math.random()*1800000:null,pending_t:(stg==='pending'||stg==='followup')?base+Math.random()*3600000:null,followup_t:stg==='followup'?base+Math.random()*7200000:null};
   });
   clients=NAMES.slice(0,9).map((n,i)=>({id:uid(),name:n,phone:'05'+(10000000+i*7654321),email:'',dest:DESTS[i%DESTS.length],type:i<2?'vip':'normal',notes:[],created:Date.now()-i*864e5*4}));
   deals=clients.slice(0,7).map((c,i)=>({id:uid(),clientId:c.id,client:c.name,dest:c.dest,date:today(),pax:2+i,value:5000+i*8000,status:['new_deal','hot','pending_deal','won','lost','new_deal','hot'][i],employee:employees[i%employees.length],created:Date.now()-i*864e5}));
-  tasks=[{id:uid(),title:'متابعة ليد فاطمة السالم',due:today(),priority:'high',status:'pending',employee:employees[0],created:Date.now()},{id:uid(),title:'إرسال عرض تركيا',due:today(),priority:'high',status:'pending',employee:employees[1],created:Date.now()},{id:uid(),title:'تأكيد حجز خالد',due:today(),priority:'medium',status:'done',employee:employees[0],created:Date.now()}];
+  tasks=[];
   saveAll(); logAct('تم تهيئة النظام بالبيانات التجريبية','var(--accent)');
 }
 
@@ -973,8 +1171,8 @@ function navigate(page){
   currentPage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg=document.getElementById('page-'+page); if(pg)pg.classList.add('active');
-  // Clear all nav active states
-  document.querySelectorAll('.nav-top-item,.nav-sub-item,.sb-bottom-item').forEach(n=>n.classList.remove('active'));
+  // Clear active on all nav elements
+  document.querySelectorAll('.zitem,.zsubitem,.zbotitem').forEach(n=>n.classList.remove('active'));
   const ni=document.getElementById('nav-'+page); if(ni)ni.classList.add('active');
   document.getElementById('topbar-title').textContent=PT[page]||page;
   document.getElementById('add-lbl').textContent=AL[page]||'إضافة';
@@ -994,7 +1192,7 @@ function renderPage(p){
 }
 
 function updateBadges(){
-  document.getElementById('badge-leads').textContent=leads.filter(l=>l.status==='new'||l.status==='not_contacted').length;
+  document.getElementById('badge-leads').textContent=leads.filter(l=>l.status==='new'||l.status==='not_contacted'||l.no_answer).length;
   document.getElementById('badge-clients').textContent=clients.length;
   document.getElementById('badge-deals').textContent=deals.filter(d=>!['won','lost'].includes(d.status)).length;
   document.getElementById('badge-tasks').textContent=tasks.filter(t=>t.status==='pending').length;
@@ -1013,6 +1211,7 @@ function renderDashboard(){
 
   document.getElementById('dash-stats').innerHTML=[
     {lbl:'الليدات اليوم',val:lt.length,sub:'ليد جديد',c:'var(--blue)'},
+    {lbl:'No Answer',val:leads.filter(l=>l.no_answer||l.status==='no_answer').length,sub:'تحتاج متابعة',c:'#F5A623'},
     {lbl:'إجمالي الليدات',val:leads.length,sub:'كل السجلات',c:'var(--accent)'},
     {lbl:'الصفقات النشطة',val:ad.length,sub:'صفقة مفتوحة',c:'var(--green)'},
     {lbl:'المهام المعلقة',val:pt.length,sub:'تحتاج متابعة',c:'var(--yellow)'},
@@ -1024,7 +1223,7 @@ function renderDashboard(){
     <td><strong style="font-size:12px;">${l.name}</strong></td>
     <td>${ICON[l.source]||''} <span style="font-size:11px;">${SRC[l.source]||l.source}</span></td>
     <td style="font-size:11px;">${l.employee}</td>
-    <td><span class="badge bs-${l.status}" style="font-size:10px;">${LS[l.status]||l.status}</span></td>
+    <td><span class="badge bs-${l.status}" style="font-size:10px;">${l.no_answer?'🔇 ':''+(LS[l.status]||l.status)}</span></td>
   </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">لا توجد ليدات اليوم</td></tr>';
 
   document.getElementById('dash-tasks-tbl').innerHTML=pt.slice(0,6).map(t=>`<tr>
@@ -1053,7 +1252,7 @@ function buildEmpFilters(){
   if(!w||w.children.length)return;
   employees.forEach(e=>{
     const l=document.createElement('label');l.className='fc-item';
-    l.innerHTML=`<input type="checkbox" class="lf-emp" value="${e}" onchange="renderLeads()"> ${e}`;
+    l.innerHTML=`<input type="checkbox" class="lf-emp" value="${e.name}" onchange="renderLeads()"> ${e.name}`;
     w.appendChild(l);
   });
 }
@@ -1086,7 +1285,7 @@ function renderLeads(){
   document.getElementById('leads-count').textContent=`${list.length} من ${leads.length}`;
   document.getElementById('leads-total').textContent=list.length;
 
-  const ecm={};employees.forEach((e,i)=>ecm[e]=EC[i%EC.length]);
+  const ecm={};employees.forEach((e,i)=>ecm[e.name]=EC[i%EC.length]);
 
   document.getElementById('leads-tbody').innerHTML=list.map(l=>{
     const dt=new Date(l.created);
@@ -1109,6 +1308,13 @@ function renderLeads(){
       <td style="font-size:12px;">${l.dest||'—'}</td>
       <td style="font-size:12px;">${l.employee}</td>
       <td onclick="event.stopPropagation()">${stgHtml}</td>
+      <td onclick="event.stopPropagation()" style="text-align:center;">
+        <label style="cursor:pointer;" title="${l.no_answer?'No Answer ✓':'تعليم كـ No Answer'}">
+          <input type="checkbox" ${l.no_answer?'checked':''} 
+            onchange="toggleNoAnswer('${l.id}',this.checked)"
+            style="width:14px;height:14px;accent-color:#F5A623;cursor:pointer;">
+        </label>
+      </td>
       <td onclick="event.stopPropagation()">
         <input value="${(l.note||'').replace(/"/g,'&quot;')}" placeholder="ملاحظة..."
           onchange="saveNote('${l.id}',this.value)"
@@ -1118,7 +1324,7 @@ function renderLeads(){
         <div style="display:flex;gap:2px;">
           <button class="btn-icon" onclick="editLead('${l.id}')"><span class="material-icons-round" style="font-size:14px;">edit</span></button>
           <button class="btn-icon" onclick="convertLead('${l.id}')" style="color:var(--green);" title="تحويل لعميل"><span class="material-icons-round" style="font-size:14px;">person_add</span></button>
-          <button class="btn-icon" onclick="deleteLead('${l.id}')" style="color:var(--red);"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+          ${can('deleteLead')?`<button class="btn-icon" onclick="deleteLead('${l.id}')" style="color:var(--red);"><span class="material-icons-round" style="font-size:14px;">delete</span></button>`:''}
         </div>
       </td>
     </tr>`;
@@ -1150,6 +1356,14 @@ function cycleStage(id,e){
 }
 
 function saveNote(id,val){const l=leads.find(x=>x.id===id);if(l){l.note=val;DB.set('leads',leads);}}
+function toggleNoAnswer(id,val){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  l.no_answer=val;
+  if(val&&l.status!=='no_answer'){l.status='no_answer';}
+  else if(!val&&l.status==='no_answer'){l.status='contacted';}
+  DB.set('leads',leads);renderLeads();updateBadges();
+  logAct((val?'تعليم':'إلغاء تعليم')+' No Answer: '+l.name,'#F5A623');
+}
 
 function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
@@ -1197,7 +1411,7 @@ function exportLeads(){
   XLSX.writeFile(wb,'leads_'+today()+'.xlsx');toast('تم تصدير الليدات ✓');
 }
 function leadForm(l={}){
-  const eOpts=employees.map(e=>`<option value="${e}" ${l.employee===e?'selected':''}>${e}</option>`).join('');
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${l.employee===e.name?'selected':''}>${e.name}</option>`).join('');
   return `<div class="frow"><div class="field"><label class="flabel">الاسم *</label><input id="f-name" value="${l.name||''}"></div><div class="field"><label class="flabel">الجوال</label><input id="f-phone" value="${l.phone||''}"></div></div>
     <div class="frow"><div class="field"><label class="flabel">مصدر الليد</label><select id="f-src">${Object.entries(SRC).map(([k,v])=>`<option value="${k}" ${l.source===k?'selected':''}>${ICON[k]||''} ${v}</option>`).join('')}</select></div><div class="field"><label class="flabel">حالة الليد</label><select id="f-lst">${Object.entries(LS).map(([k,v])=>`<option value="${k}" ${l.status===k?'selected':''}>${v}</option>`).join('')}</select></div></div>
     <div class="frow"><div class="field"><label class="flabel">الوجهة</label><input id="f-dest" value="${l.dest||''}"></div><div class="field"><label class="flabel">الموظف</label><select id="f-emp">${eOpts}</select></div></div>
@@ -1269,7 +1483,7 @@ function saveClient(id){
 function renderDeals(){
   const s=gv('deal-search').toLowerCase(),sf=gv('deal-status'),ef=gv('deal-emp');
   const sel=document.getElementById('deal-emp');
-  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e.name;o.textContent=e.name;sel.appendChild(o);});
   let list=deals.filter(d=>{
     if(s&&!(d.client+d.dest).toLowerCase().includes(s))return false;
     if(sf&&d.status!==sf)return false;
@@ -1295,7 +1509,7 @@ function editDeal(id){openModal(id?'تعديل صفقة':'صفقة جديدة',d
 function deleteDeal(id){if(!confirm('حذف؟'))return;deals=deals.filter(d=>d.id!==id);DB.set('deals',deals);renderDeals();updateBadges();}
 function dealForm(d={}){
   const cOpts=clients.map(c=>`<option value="${c.id}" ${d.clientId===c.id?'selected':''}>${c.name}</option>`).join('');
-  const eOpts=employees.map(e=>`<option value="${e}" ${d.employee===e?'selected':''}>${e}</option>`).join('');
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${d.employee===e.name?'selected':''}>${e.name}</option>`).join('');
   return `<div class="frow"><div class="field"><label class="flabel">العميل</label><select id="f-cl"><option value="">—</option>${cOpts}</select></div><div class="field"><label class="flabel">الوجهة</label><input id="f-dest" value="${d.dest||''}"></div></div>
     <div class="frow"><div class="field"><label class="flabel">التاريخ</label><input type="date" id="f-date" value="${d.date||today()}"></div><div class="field"><label class="flabel">الأفراد</label><input type="number" id="f-pax" value="${d.pax||2}" min="1"></div></div>
     <div class="frow"><div class="field"><label class="flabel">القيمة</label><input type="number" id="f-val" value="${d.value||0}"></div><div class="field"><label class="flabel">الحالة</label><select id="f-dst">${Object.entries(DL).map(([k,v])=>`<option value="${k}" ${d.status===k?'selected':''}>${v}</option>`).join('')}</select></div></div>
@@ -1336,7 +1550,7 @@ function renderTasks(filter,btn){
   if(btn){document.querySelectorAll('#page-tasks .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
   const td=today(),ef=gv('task-emp');
   const sel=document.getElementById('task-emp');
-  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+  if(sel.options.length<=1)employees.forEach(e=>{const o=document.createElement('option');o.value=e.name;o.textContent=e.name;sel.appendChild(o);});
   let list=tasks.filter(t=>{
     if(ef&&t.employee!==ef)return false;
     if(filter==='pending')return t.status==='pending';
@@ -1361,7 +1575,7 @@ function completeTask(id){const t=tasks.find(x=>x.id===id);if(t){t.status='done'
 function editTask(id){openModal(id?'تعديل مهمة':'مهمة جديدة',taskForm(tasks.find(x=>x.id===id)||{}),()=>saveTask(id));}
 function deleteTask(id){if(!confirm('حذف؟'))return;tasks=tasks.filter(t=>t.id!==id);DB.set('tasks',tasks);renderTasks('all');updateBadges();}
 function taskForm(t={}){
-  const eOpts=employees.map(e=>`<option value="${e}" ${t.employee===e?'selected':''}>${e}</option>`).join('');
+  const eOpts=employees.map(e=>`<option value="${e.name}" ${t.employee===e.name?'selected':''}>${e.name}</option>`).join('');
   return `<div class="field"><label class="flabel">عنوان المهمة *</label><input id="f-title" value="${t.title||''}"></div>
     <div class="frow"><div class="field"><label class="flabel">الموظف</label><select id="f-emp">${eOpts}</select></div><div class="field"><label class="flabel">الاستحقاق</label><input type="date" id="f-due" value="${t.due||today()}"></div></div>
     <div class="field"><label class="flabel">الأولوية</label><select id="f-pri"><option value="high" ${t.priority==='high'?'selected':''}>عالية 🔴</option><option value="medium" ${t.priority==='medium'?'selected':''}>متوسطة 🟡</option><option value="low" ${t.priority==='low'?'selected':''}>منخفضة 🟢</option></select></div>`;
@@ -1378,14 +1592,14 @@ function saveTask(id){
 // ══════════════════════════════════════════
 function renderEmployees(){
   document.getElementById('emp-grid').innerHTML=employees.map((e,i)=>{
-    const ml=leads.filter(l=>l.employee===e);
-    const mt=tasks.filter(t=>t.employee===e&&t.status==='pending');
-    const md=deals.filter(d=>d.employee===e&&!['won','lost'].includes(d.status));
+    const ml=leads.filter(l=>l.employee===e.name);
+    const mt=tasks.filter(t=>t.employee===e.name&&t.status==='pending');
+    const md=deals.filter(d=>d.employee===e.name&&!['won','lost'].includes(d.status));
     const st={assign:0,workin:0,pending:0,followup:0};
     ml.forEach(l=>{if(l.stage&&st[l.stage]!==undefined)st[l.stage]++;});
     return `<div class="emp-card">
-      <div class="emp-av" style="background:${EC[i%EC.length]}">${initials(e)}</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:10px;font-family:'Cairo',sans-serif;">${e}</div>
+      <div class="emp-av" style="background:${EC[i%EC.length]}">${initials(e.name)}</div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:10px;font-family:'Cairo',sans-serif;">${e.name}</div>
       ${[['الليدات الكلية',ml.length],['الصفقات النشطة',md.length],['المهام المعلقة',mt.length],['Assign',st.assign],['Work in it',st.workin],['Pending',st.pending],['Followup',st.followup]].map(([k,v])=>`<div class="emp-row"><span style="color:var(--text2);">${k}</span><span style="font-weight:700;color:var(--accent);">${v}</span></div>`).join('')}
     </div>`;
   }).join('');
@@ -1415,7 +1629,7 @@ function renderReports(){
   buildBar(sc,Math.max(...Object.values(sc),1),'rep-source');
   buildBar(ss,Math.max(...Object.values(ss),1),'rep-status');
 
-  document.getElementById('rep-emp').innerHTML=employees.map((e,i)=>{const n=leads.filter(l=>l.employee===e).length;return `<div class="prog-row"><span class="prog-lbl">${e}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(n,tl)}%;background:${EC[i%EC.length]};"></div></div><span class="prog-num">${n}</span></div>`;}).join('');
+  document.getElementById('rep-emp').innerHTML=employees.map((e,i)=>{const n=leads.filter(l=>l.employee===e.name).length;return `<div class="prog-row"><span class="prog-lbl">${e.name}</span><div class="prog-bg"><div class="prog-fill" style="width:${pct(n,tl)}%;background:${EC[i%EC.length]};"></div></div><span class="prog-num">${n}</span></div>`;}).join('');
 
   const dm={};for(let i=13;i>=0;i--){const d=new Date(Date.now()-i*864e5).toISOString().slice(0,10);dm[d]=0;}
   leads.forEach(l=>{const d=new Date(l.created).toISOString().slice(0,10);if(d in dm)dm[d]++;});
@@ -1599,7 +1813,7 @@ function xlExport(){
 function xlImport(){
   const nl=xlFiltered.filter(r=>r.name&&!String(r.name).match(/^\d+$/)).map(r=>({
     id:uid(),name:String(r.name).trim(),phone:r.num||'',source:'other',status:'new',
-    dest:'',employee:r.emp||employees[0],note:'',created:r.req?r.req.getTime():Date.now(),
+    dest:'',employee:r.emp||employees[0]?.name||'',created:r.req?r.req.getTime():Date.now(),
     stage:r.ft?'followup':r.pt?'pending':r.wt?'workin':r.at?'assign':null,
     assign_t:r.at?r.at.getTime():null,workin_t:r.wt?r.wt.getTime():null,
     pending_t:r.pt?r.pt.getTime():null,followup_t:r.ft?r.ft.getTime():null,
@@ -1630,15 +1844,33 @@ function renderSettings(){
   document.getElementById('s-company').value=settings.company||'';
   document.getElementById('s-currency').value=settings.currency||'ريال';
   document.getElementById('s-manager').value=settings.manager||'';
+  
+  // تحديث قائمة الموظفين مع زر الصلاحيات
+  const isAdmin=()=>{const u=employees.find(e=>e.id===currentUser);return u&&u.role==='admin';};
   document.getElementById('emp-settings-list').innerHTML=employees.map((e,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:6px;background:var(--s2);border-radius:8px;">
-      <div style="width:27px;height:27px;border-radius:7px;background:${EC[i%EC.length]};display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;">${initials(e)}</div>
-      <span style="flex:1;font-size:13px;">${e}</span>
-      <button class="btn-icon" style="color:var(--red);" onclick="removeEmp(${i})"><span class="material-icons-round" style="font-size:14px;">delete</span></button>
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--s2);border:1px solid var(--border);border-radius:10px;">
+      <div style="width:34px;height:34px;border-radius:9px;background:${EC[i%EC.length]};display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${initials(e.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">${e.name}</div>
+        <div style="font-size:11px;color:${ROLE_COLOR[e.role]||'var(--text3)'};">${ROLES[e.role]||e.role}</div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        ${isAdmin()?`
+          <button class="btn btn-g btn-xs" onclick="openPermModal('${e.id}')" title="إدارة الصلاحيات">
+            <span class="material-icons-round" style="font-size:13px;">admin_panel_settings</span> صلاحيات
+          </button>
+          <button class="btn btn-g btn-xs" onclick="editEmpModal('${e.id}')" title="تعديل">
+            <span class="material-icons-round" style="font-size:13px;">edit</span>
+          </button>
+          <button class="btn-icon" style="color:var(--red);" onclick="removeEmp('${e.id}')">
+            <span class="material-icons-round" style="font-size:14px;">delete</span>
+          </button>
+        `:'<span style="font-size:11px;color:var(--text3);">للمشاهدة فقط</span>'}
+      </div>
     </div>`).join('');
 }
 function saveSettings(){
-  settings.company=gv('s-company')||'بوابات العالم';
+  settings.company=gv('s-company')||'نظام إدارة العملاء';
   settings.currency=gv('s-currency');
   settings.manager=gv('s-manager');
   DB.set('settings',settings);applyTheme();
@@ -1649,12 +1881,39 @@ function saveSettings(){
 }
 function addEmployee(){
   const n=gv('new-emp').trim();if(!n)return;
-  employees.push(n);DB.set('employees',employees);
-  document.getElementById('new-emp').value='';renderSettings();toast('تم إضافة '+n+' ✓');
+  const newEmp={
+    id:uid(),name:n,role:'sales',pin:'0000',
+    perms:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,
+           employees:false,reports:false,excel:false,settings:false,
+           addLead:true,editLead:true,deleteLead:false,exportLeads:false,
+           addDeal:true,deleteDeal:false,addClient:true,deleteClient:false}
+  };
+  employees.push(newEmp);DB.set('employees',employees);
+  document.getElementById('new-emp').value='';renderSettings();
+  toast('تم إضافة '+n+' ✓ — تذكر تعيين PIN والصلاحيات');
 }
-function removeEmp(i){
-  if(!confirm('حذف '+employees[i]+'؟'))return;
-  employees.splice(i,1);DB.set('employees',employees);renderSettings();
+function removeEmp(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  if(!confirm('حذف '+e.name+'؟'))return;
+  employees=employees.filter(x=>x.id!==id);DB.set('employees',employees);renderSettings();
+}
+function editEmpModal(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  openModal('تعديل: '+e.name,`
+    <div class="frow">
+      <div class="field"><label class="flabel">الاسم</label><input id="f-ename" value="${e.name}"></div>
+      <div class="field"><label class="flabel">PIN (رمز الدخول)</label><input id="f-epin" type="password" value="${e.pin}" placeholder="أرقام فقط" maxlength="6"></div>
+    </div>
+    <div class="field"><label class="flabel">الدور</label>
+      <select id="f-erole">
+        ${Object.entries(ROLES).map(([k,v])=>'<option value="'+k+'" '+(e.role===k?'selected':'')+'>'+v+'</option>').join('')}
+      </select>
+    </div>`,()=>{
+    e.name=gv('f-ename').trim()||e.name;
+    e.pin=gv('f-epin')||e.pin;
+    e.role=gv('f-erole');
+    DB.set('employees',employees);renderSettings();closeModal();toast('تم الحفظ ✓');
+  });
 }
 function applyTheme(){if(settings.accent)document.documentElement.style.setProperty('--accent',settings.accent);}
 function pickColor(c,el){
@@ -1663,6 +1922,76 @@ function pickColor(c,el){
   el.style.outline='2px solid #fff';el.style.outlineOffset='2px';
   applyTheme();
 }
+function openPermModal(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  const ei=employees.indexOf(e);
+
+  const pages=['dashboard','leads','clients','deals','pipeline','tasks','employees','reports','excel','settings'];
+  const actions=['addLead','editLead','deleteLead','exportLeads','addDeal','deleteDeal','addClient','deleteClient'];
+
+  const pagesHtml=pages.map(p=>`
+    <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s2);border-radius:8px;cursor:pointer;margin-bottom:5px;">
+      <span style="font-size:13px;">${PERM_LABELS[p]}</span>
+      <input type="checkbox" id="pm-${p}" ${e.perms[p]?'checked':''} style="width:16px;height:16px;accent-color:var(--accent);">
+    </label>`).join('');
+
+  const actionsHtml=actions.map(a=>`
+    <label style="display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s2);border-radius:8px;cursor:pointer;margin-bottom:5px;">
+      <span style="font-size:13px;">${PERM_LABELS[a]}</span>
+      <input type="checkbox" id="pm-${a}" ${e.perms[a]?'checked':''} style="width:16px;height:16px;accent-color:var(--green);">
+    </label>`).join('');
+
+  openModal(`صلاحيات: ${e.name}`,`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:10px;margin-bottom:14px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:${EC[ei%EC.length]};display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;">${initials(e.name)}</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;">${e.name}</div>
+        <div style="font-size:11px;color:${ROLE_COLOR[e.role]};">${ROLES[e.role]||e.role}</div>
+      </div>
+      <div style="margin-right:auto;display:flex;gap:6px;">
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','admin')">مدير</button>
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','sales')">مبيعات</button>
+        <button class="btn btn-g btn-xs" onclick="applyPreset('${id}','viewer')">عارض</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📋 الصفحات</div>
+        ${pagesHtml}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚡ الإجراءات</div>
+        ${actionsHtml}
+      </div>
+    </div>`,()=>{
+    [...pages,...actions].forEach(p=>{
+      const el=document.getElementById('pm-'+p);
+      if(el)e.perms[p]=el.checked;
+    });
+    DB.set('employees',employees);renderSettings();closeModal();
+    toast('تم حفظ صلاحيات '+e.name+' ✓');
+    if(currentUser===id)applyPermUI();
+  });
+  document.getElementById('mo-save').textContent='حفظ الصلاحيات';
+}
+
+function applyPreset(id,role){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  const presets={
+    admin:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,employees:true,reports:true,excel:true,settings:true,addLead:true,editLead:true,deleteLead:true,exportLeads:true,addDeal:true,deleteDeal:true,addClient:true,deleteClient:true},
+    sales:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,employees:false,reports:false,excel:false,settings:false,addLead:true,editLead:true,deleteLead:false,exportLeads:false,addDeal:true,deleteDeal:false,addClient:true,deleteClient:false},
+    viewer:{dashboard:true,leads:true,clients:false,deals:false,pipeline:false,tasks:true,employees:false,reports:true,excel:false,settings:false,addLead:false,editLead:false,deleteLead:false,exportLeads:false,addDeal:false,deleteDeal:false,addClient:false,deleteClient:false}
+  };
+  if(!presets[role])return;
+  e.role=role;
+  Object.assign(e.perms,presets[role]);
+  // تحديث checkboxes في الـ modal
+  Object.entries(presets[role]).forEach(([p,v])=>{
+    const el=document.getElementById('pm-'+p);if(el)el.checked=v;
+  });
+  toast('تم تطبيق قالب '+ROLES[role]+' — اضغط حفظ للتأكيد','info');
+}
+
 function exportBackup(){
   const blob=new Blob([JSON.stringify({leads,clients,deals,tasks,activity,settings,employees},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bw_backup_'+today()+'.json';a.click();
@@ -1831,11 +2160,192 @@ function toggleGroup(hdr){
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+// ══ LOGIN SYSTEM ══
+let loginTarget=null;
+
+function showLogin(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-company').textContent=settings.company||'نظام إدارة العملاء';
+  renderLoginList();
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-step2').style.display='none';
+}
+
+function renderLoginList(){
+  const el=document.getElementById('login-emp-list');
+  if(!employees.length){
+    el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--text3);">
+      <span class="material-icons-round" style="font-size:36px;display:block;margin-bottom:8px;opacity:.4;">group_add</span>
+      <p style="font-size:13px;margin-bottom:4px;color:var(--text2);font-weight:600;">لا يوجد مستخدمون بعد</p>
+      <p style="font-size:11px;">يرجى إضافة مستخدم أول من خلال زر "إعداد النظام" أدناه</p>
+      <button class="btn btn-p" style="margin-top:14px;" onclick="setupFirst()">
+        <span class="material-icons-round" style="font-size:15px;">settings</span> إعداد النظام
+      </button>
+    </div>`;
+    return;
+  }
+  el.innerHTML=employees.map((e,i)=>`
+    <div onclick="selectEmp('${e.id}')" style="display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--s2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .13s;" 
+      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="width:38px;height:38px;border-radius:10px;background:${EC[i%EC.length]};display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">${initials(e.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">${e.name}</div>
+        <div style="font-size:11px;color:${ROLE_COLOR[e.role]||'var(--text3)'};">${ROLES[e.role]||e.role}</div>
+      </div>
+      <span class="material-icons-round" style="color:var(--text3);font-size:16px;">chevron_left</span>
+    </div>`).join('');
+}
+
+function selectEmp(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  loginTarget=id;
+  const i=employees.indexOf(e);
+  document.getElementById('pin-emp-av').style.background=EC[i%EC.length];
+  document.getElementById('pin-emp-av').textContent=initials(e.name);
+  document.getElementById('pin-emp-name').textContent=e.name;
+  document.getElementById('pin-emp-role').textContent=ROLES[e.role]||e.role;
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').textContent='';
+  document.getElementById('login-step1').style.display='none';
+  document.getElementById('login-step2').style.display='block';
+  // Build numpad
+  const np=document.getElementById('numpad');
+  np.innerHTML=[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(n=>`
+    <button onclick="numpadClick('${n}')" style="padding:13px;background:var(--s2);border:1px solid var(--border);border-radius:9px;font-size:${n==='✓'?'16px':'18px'};font-weight:700;color:${n==='✓'?'var(--green)':n==='⌫'?'var(--red)':'var(--text)'};cursor:pointer;transition:background .1s;font-family:'Tajawal',sans-serif;"
+      onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">${n}</button>`).join('');
+  setTimeout(()=>document.getElementById('pin-input').focus(),50);
+}
+
+function numpadClick(v){
+  const inp=document.getElementById('pin-input');
+  if(v==='⌫'){inp.value=inp.value.slice(0,-1);}
+  else if(v==='✓'){doLogin();}
+  else{if(inp.value.length<6)inp.value+=v;}
+}
+
+function backToStep1(){
+  loginTarget=null;
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-step2').style.display='none';
+}
+
+function doLogin(){
+  const pin=document.getElementById('pin-input').value.trim();
+  const e=employees.find(x=>x.id===loginTarget);
+  if(!e){toast('اختر موظفاً أولاً','error');return;}
+  if(pin!==String(e.pin)){
+    document.getElementById('pin-error').textContent='رمز PIN غير صحيح';
+    document.getElementById('pin-input').value='';
+    document.getElementById('pin-input').focus();
+    return;
+  }
+  currentUser=e.id;
+  DB.set('currentUser',currentUser);
+  document.getElementById('login-screen').style.display='none';
+  bootApp();
+}
+
+function setupFirst(){
+  // نعرض الفورم داخل شاشة الدخول مباشرة (فوق z-index 9000)
+  const el = document.getElementById('login-emp-list');
+  el.innerHTML = `
+    <div style="background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);border-radius:10px;padding:13px;margin-bottom:12px;font-size:12px;color:var(--text2);display:flex;gap:8px;align-items:center;">
+      <span class="material-icons-round" style="color:var(--accent);font-size:18px;">admin_panel_settings</span>
+      <span>إنشاء حساب المدير الأول — كامل الصلاحيات</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">الاسم *</label>
+        <input id="sf-name" placeholder="اسم المدير" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;outline:none;width:100%;font-family:'Tajawal',sans-serif;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">رمز PIN * (أرقام فقط)</label>
+        <input id="sf-pin" type="password" placeholder="مثال: 1234" maxlength="6"
+          style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:18px;letter-spacing:6px;outline:none;width:100%;font-family:'Tajawal',sans-serif;">
+      </div>
+      <div id="sf-err" style="color:var(--red);font-size:12px;min-height:16px;text-align:center;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="doSetupFirst()" class="btn btn-p" style="flex:1;padding:11px;font-size:13px;">
+          <span class="material-icons-round" style="font-size:15px;">check_circle</span> إنشاء الحساب
+        </button>
+        <button onclick="renderLoginList()" class="btn btn-g" style="padding:11px 14px;">
+          <span class="material-icons-round" style="font-size:15px;">arrow_back</span>
+        </button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('sf-name')?.focus(), 50);
+}
+
+function doSetupFirst(){
+  const n = (document.getElementById('sf-name')?.value||'').trim();
+  const p = (document.getElementById('sf-pin')?.value||'').trim();
+  const errEl = document.getElementById('sf-err');
+  if(!n){ errEl.textContent='يرجى إدخال الاسم'; return; }
+  if(!p||p.length < 4){ errEl.textContent='PIN يجب أن يكون 4 أرقام على الأقل'; return; }
+  const newAdmin={
+    id:uid(), name:n, role:'admin', pin:p,
+    perms:{dashboard:true,leads:true,clients:true,deals:true,pipeline:true,tasks:true,
+           employees:true,reports:true,excel:true,settings:true,
+           addLead:true,editLead:true,deleteLead:true,exportLeads:true,
+           addDeal:true,deleteDeal:true,addClient:true,deleteClient:true}
+  };
+  employees.push(newAdmin);
+  DB.set('employees', employees);
+  toast('تم إنشاء حساب '+n+' ✓');
+  renderLoginList();
+}
+function toggleUserMenu(){
+  const m=document.getElementById('user-menu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',e=>{
+  const m=document.getElementById('user-menu');
+  const uc=document.querySelector('.user-card');
+  if(m&&m.style.display!=='none'&&!m.contains(e.target)&&!uc.contains(e.target))
+    m.style.display='none';
+});
+function logout(){
+  currentUser=null;
+  DB.set('currentUser',null);
+  showLogin();
+}
+
+function bootApp(){
+  const u=employees.find(e=>e.id===currentUser);if(!u)return;
+  applyTheme();
+  document.getElementById('sb-company').textContent=settings.company||'نظام إدارة العملاء';
+  document.getElementById('u-name').textContent=u.name;
+  const i=employees.indexOf(u);
+  document.getElementById('u-av').style.background=EC[i%EC.length];
+  document.getElementById('u-av').textContent=initials(u.name);
+  document.getElementById('u-role-lbl').textContent=ROLES[u.role]||'';
+  applyPermUI();
+  // اذهب لأول صفحة مسموح بها
+  const pages=['dashboard','leads','clients','deals','tasks','reports'];
+  const first=pages.find(p=>u.perms[p])||'dashboard';
+  navigate(first);
+  updateBadges();
+}
+
+// تحديث navigate ليتحقق من الصلاحيات
+const _origNavigate=navigate;
+navigate=function(page){
+  if(currentUser){
+    const u=employees.find(e=>e.id===currentUser);
+    if(u&&u.perms[page]===false){toast('ليس لديك صلاحية الوصول لهذه الصفحة','error');return;}
+  }
+  _origNavigate(page);
+  applyPermUI();
+};
+
+// ════ INIT ════
 applyTheme();
-document.getElementById('sb-company').textContent=settings.company;
-document.getElementById('u-name').textContent=settings.manager||'مدير النظام';
-document.getElementById('u-av').textContent=initials(settings.manager||'م');
-renderDashboard();
+document.getElementById('login-company').textContent=settings.company||'نظام إدارة العملاء';
+if(currentUser&&employees.find(e=>e.id===currentUser)){
+  bootApp();
+}else{
+  showLogin();
+}
 updateBadges();
 </script>
 </body>
